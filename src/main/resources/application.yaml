@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: sellon
+
+  jwt:
+    secret: pT+HzrT8gQkRpGJzxrfEFiS2yZPLClVhRxn3GuRIq2U=
+    tokens:
+      expire:
+        access_token: 1800000
+        refresh_token: 2592000000
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sellon
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password:
+
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+
+  data:
+    redis:
+      # 로컬 개발: localhost의 redis 컨테이너 / 배포: ElastiCache Primary Endpoint(Cluster Mode Disabled)
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+#  mail:
+#    host: smtp.worksmobile.com
+#    port: 587
+#    username: ${SMTP_USER}
+#    password: ${SMTP_PASSWORD}
+#    properties:
+#      mail:
+#        debug: true
