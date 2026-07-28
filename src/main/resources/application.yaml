@@ -9,6 +9,9 @@ spring:
         access_token: 1800000
         refresh_token: 2592000000
 
+  cursor:
+    secret: pL2URxS9qn80k2DLiSwZ4CplPqXOsLoAWFnVrf0YYlY=
+
   datasource:
     url: jdbc:postgresql://localhost:5432/sellon
     driver-class-name: org.postgresql.Driver
