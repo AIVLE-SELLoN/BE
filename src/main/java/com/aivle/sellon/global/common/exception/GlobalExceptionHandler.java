@@ -1,6 +1,7 @@
 package com.aivle.sellon.global.common.exception;
 
 import com.aivle.sellon.global.common.ApiResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,21 @@ public class GlobalExceptionHandler {
                 .orElse("잘못된 요청입니다.");
         return ApiResponse.failedOf(
                 HttpStatus.BAD_REQUEST ,
+                errorMessage
+        );
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public <T> ResponseEntity<ApiResponse<T>> handleConstraintViolationException(ConstraintViolationException ex) {
+        ex.printStackTrace();
+
+        String errorMessage = ex.getConstraintViolations()
+                .stream()
+                .findFirst()
+                .map(violation -> violation.getMessage())
+                .orElse("잘못된 요청입니다.");
+        return ApiResponse.failedOf(
+                HttpStatus.BAD_REQUEST,
                 errorMessage
         );
     }

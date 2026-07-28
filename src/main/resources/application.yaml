@@ -34,11 +34,19 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
-#  mail:
-#    host: smtp.worksmobile.com
-#    port: 587
-#    username: ${SMTP_USER}
-#    password: ${SMTP_PASSWORD}
-#    properties:
-#      mail:
-#        debug: true
+  mail:
+    host: smtp.worksmobile.com
+    port: 587
+    username: ${SMTP_USER}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+        debug: true
+
+  verification:
+    code:
+      expire: 300000
