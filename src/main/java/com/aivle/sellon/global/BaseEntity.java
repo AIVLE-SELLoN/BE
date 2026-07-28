@@ -36,7 +36,7 @@ public class BaseEntity {
     }
 
     protected void delete() {
-        if (Objects.nonNull(deletedAt))
+        if (Objects.isNull(deletedAt))
             deletedAt = LocalDateTime.now();
     }
 
