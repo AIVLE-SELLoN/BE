@@ -23,7 +23,7 @@ public class EmailVerificationService {
     private final JavaMailSender mailSender;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    @Value("${spring.mail.username}")
+    @Value("${spring.mail.from}")
     private String fromAddress;
 
     @Value("${spring.verification.code.expire}")

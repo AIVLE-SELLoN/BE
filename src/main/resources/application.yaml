@@ -39,6 +39,7 @@ spring:
     port: 587
     username: ${SMTP_USER}
     password: ${SMTP_PASSWORD}
+    from: sellon_info@sellon.site
     properties:
       mail:
         smtp:
