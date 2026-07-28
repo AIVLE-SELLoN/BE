@@ -17,6 +17,7 @@ import com.aivle.sellon.domain.user.entity.User;
 import com.aivle.sellon.domain.user.exception.DuplicateEmailException;
 import com.aivle.sellon.domain.user.exception.UserNotFoundException;
 import com.aivle.sellon.domain.user.repository.UserRepository;
+import com.aivle.sellon.domain.verification.service.EmailVerificationService;
 import com.aivle.sellon.global.redis.service.RefreshTokenRedisService;
 import com.aivle.sellon.global.redis.service.TokenBlacklistRedisService;
 import com.aivle.sellon.global.security.jwt.JwtProvider;
@@ -46,10 +47,12 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRedisService refreshTokenRedisService;
     private final TokenBlacklistRedisService tokenBlacklistRedisService;
+    private final EmailVerificationService emailVerificationService;
 
     @Transactional
     public SignupResponse signupRoot(RootSignupRequest request) {
         validateEmailNotDuplicated(request.email());
+        emailVerificationService.validateVerificationToken(request.email(), request.verificationToken());
 
         Company company = companyRepository.save(
                 Company.create(companyKeyGenerator.generate(), request.companyName())
@@ -68,6 +71,7 @@ public class AuthService {
     @Transactional
     public SignupResponse signupMember(MemberSignupRequest request) {
         validateEmailNotDuplicated(request.email());
+        emailVerificationService.validateVerificationToken(request.email(), request.verificationToken());
 
         Company company = companyRepository.findByJoinKey(request.companyKey())
                 .orElseThrow(InvalidCompanyKeyException::new);

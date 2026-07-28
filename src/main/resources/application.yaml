@@ -35,7 +35,7 @@ spring:
       port: ${REDIS_PORT:6379}
 
   mail:
-    host: smtp.worksmobile.com
+    host: smtp.gmail.com
     port: 587
     username: ${SMTP_USER}
     password: ${SMTP_PASSWORD}
@@ -51,3 +51,5 @@ spring:
   verification:
     code:
       expire: 300000
+    token:
+      expire: 1800000

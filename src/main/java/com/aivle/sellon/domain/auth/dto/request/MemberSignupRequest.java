@@ -17,6 +17,9 @@ public record MemberSignupRequest(
         String name,
 
         @NotBlank(message = "회사 키를 입력해주세요.")
-        String companyKey
+        String companyKey,
+
+        @NotBlank(message = "이메일 인증이 필요합니다.")
+        String verificationToken
 ) {
 }

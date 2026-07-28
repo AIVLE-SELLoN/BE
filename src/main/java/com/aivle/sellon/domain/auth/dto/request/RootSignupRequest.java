@@ -17,6 +17,9 @@ public record RootSignupRequest(
         String name,
 
         @NotBlank(message = "회사명을 입력해주세요.")
-        String companyName
+        String companyName,
+
+        @NotBlank(message = "이메일 인증이 필요합니다.")
+        String verificationToken
 ) {
 }

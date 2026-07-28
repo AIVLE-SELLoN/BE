@@ -1,5 +1,6 @@
 package com.aivle.sellon.domain.verification.controller;
 
+import com.aivle.sellon.domain.verification.dto.response.VerificationTokenResponse;
 import com.aivle.sellon.domain.verification.service.EmailVerificationService;
 import com.aivle.sellon.global.common.ApiResponse;
 import jakarta.validation.constraints.Email;
@@ -22,18 +23,18 @@ public class VerificationController {
 
     @GetMapping("/email-verification")
     public ResponseEntity<ApiResponse<Void>> sendEmailVerification(
-            @RequestParam @NotBlank @Email String email
+            @RequestParam(name = "email") @NotBlank @Email String email
     ) {
         emailVerificationService.sendVerificationCode(email);
         return ApiResponse.ok();
     }
 
     @GetMapping("/email-verification/confirm")
-    public ResponseEntity<ApiResponse<Void>> confirmEmailVerification(
-            @RequestParam @NotBlank @Email String email,
-            @RequestParam @NotBlank String code
+    public ResponseEntity<ApiResponse<VerificationTokenResponse>> confirmEmailVerification(
+            @RequestParam(name = "email") @NotBlank @Email String email,
+            @RequestParam(name = "code") @NotBlank String code
     ) {
-        emailVerificationService.verifyCode(email, code);
-        return ApiResponse.ok();
+        String token = emailVerificationService.verifyCode(email, code);
+        return ApiResponse.ok(new VerificationTokenResponse(token));
     }
 }
