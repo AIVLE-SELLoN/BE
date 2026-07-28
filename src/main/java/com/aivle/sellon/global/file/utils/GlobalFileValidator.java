@@ -10,17 +10,15 @@ public class GlobalFileValidator {
         String extension = extractExtension(fileName);
 
         AcceptableFileType fileType = AcceptableFileType.fromExtension(extension);
-        if (fileType == null)
-            throw new InvalidExtensionException();
+        if (fileType == null) throw new InvalidExtensionException();
 
         return fileType;
     }
 
     private String extractExtension(String fileName) {
         int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex == -1) {
-            throw new InvalidExtensionException();
-        }
+        if (lastDotIndex == -1) throw new InvalidExtensionException();
+
 
         return fileName.substring(lastDotIndex + 1);
     }
