@@ -19,18 +19,21 @@ public class Company extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String joinKey;
 
     @Column(nullable = false)
     private String name;
 
-    private Company(String joinKey, String name) {
-        this.joinKey = joinKey;
+    private Company(String name) {
         this.name = name;
     }
 
-    public static Company create(String joinKey, String name) {
-        return new Company(joinKey, name);
+    public static Company create(String name) {
+        return new Company(name);
+    }
+
+    public void issueJoinKey(String joinKey) {
+        this.joinKey = joinKey;
     }
 }

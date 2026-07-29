@@ -12,7 +12,6 @@ import com.aivle.sellon.domain.auth.exception.InvalidCredentialsException;
 import com.aivle.sellon.domain.company.entity.Company;
 import com.aivle.sellon.domain.company.exception.InvalidCompanyKeyException;
 import com.aivle.sellon.domain.company.repository.CompanyRepository;
-import com.aivle.sellon.domain.company.util.CompanyKeyGenerator;
 import com.aivle.sellon.domain.user.entity.User;
 import com.aivle.sellon.domain.user.exception.DuplicateEmailException;
 import com.aivle.sellon.domain.user.exception.UserNotFoundException;
@@ -41,7 +40,6 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
-    private final CompanyKeyGenerator companyKeyGenerator;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
@@ -54,9 +52,7 @@ public class AuthService {
         validateEmailNotDuplicated(request.email());
         emailVerificationService.validateVerificationToken(request.email(), request.verificationToken());
 
-        Company company = companyRepository.save(
-                Company.create(companyKeyGenerator.generate(), request.companyName())
-        );
+        Company company = companyRepository.save(Company.create(request.companyName()));
 
         User user = userRepository.save(User.createRoot(
                 request.email(),
