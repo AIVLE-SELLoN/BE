@@ -4,6 +4,7 @@ import com.aivle.sellon.domain.company.entity.Company;
 import com.aivle.sellon.domain.company.exception.CompanyNotFoundException;
 import com.aivle.sellon.domain.company.repository.CompanyRepository;
 import com.aivle.sellon.domain.company.util.CompanyKeyGenerator;
+import com.aivle.sellon.domain.mypage.exception.CompanyKeyNotIssuedException;
 import com.aivle.sellon.domain.mypage.exception.NotCompanyOwnerException;
 import com.aivle.sellon.domain.user.enums.Role;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
@@ -30,5 +31,19 @@ public class MyPageService {
         company.issueJoinKey(newKey);
 
         return newKey;
+    }
+
+    public String getCompanyKey(UserPrincipal principal) {
+        if (principal.getRole() != Role.ROOT)
+            throw new NotCompanyOwnerException();
+
+        Company company = companyRepository.findById(principal.getCompanyId())
+                .orElseThrow(CompanyNotFoundException::new);
+
+        String joinKey = company.getJoinKey();
+        if (joinKey == null)
+            throw new CompanyKeyNotIssuedException();
+
+        return joinKey;
     }
 }

@@ -5,8 +5,10 @@ import com.aivle.sellon.domain.mypage.service.MyPageService;
 import com.aivle.sellon.global.common.ApiResponse;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,5 +26,15 @@ public class MyPageController {
     ) {
         String companyKey = myPageService.issueCompanyKey(principal);
         return ApiResponse.ok(new CompanyKeyResponse(companyKey));
+    }
+
+    @GetMapping("/company-key")
+    public ResponseEntity<ApiResponse<CompanyKeyResponse>> getCompanyKey(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        CompanyKeyResponse response = new CompanyKeyResponse(myPageService.getCompanyKey(principal));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(ApiResponse.<CompanyKeyResponse>builder().data(response).build());
     }
 }
