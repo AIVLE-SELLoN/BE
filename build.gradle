@@ -54,6 +54,9 @@ dependencies {
 
 	// Apache Kafka
 
+	// RabbitMQ
+	implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
 	// AWS
 
 	// K8s
