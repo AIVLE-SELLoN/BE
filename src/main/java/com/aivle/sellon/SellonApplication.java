@@ -9,9 +9,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 //@EnableAsync
 @EnableJpaAuditing
 public class SellonApplication {
-
 	public static void main(String[] args) {
 		SpringApplication.run(SellonApplication.class, args);
 	}
-
 }
