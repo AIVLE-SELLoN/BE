@@ -34,7 +34,9 @@ public class MyPageController {
     ) {
         CompanyKeyResponse response = new CompanyKeyResponse(myPageService.getCompanyKey(principal));
         return ResponseEntity.ok()
-                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .header(HttpHeaders.EXPIRES, "0")
                 .body(ApiResponse.<CompanyKeyResponse>builder().data(response).build());
     }
 }
