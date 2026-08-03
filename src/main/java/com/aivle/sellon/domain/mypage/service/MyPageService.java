@@ -77,7 +77,7 @@ public class MyPageService {
             companyKey = companyKeyMasker.mask(joinKey);
         }
 
-        ReportSettingResponse reportSetting = monthlyReportSettingRepository.findByCompanyId(company.getId())
+        ReportSettingResponse reportSetting = monthlyReportSettingRepository.findByCompanyIdAndDeletedAtIsNull(company.getId())
                 .map(setting -> ReportSettingResponse.of(setting, findRecipients(company.getId())))
                 .orElseGet(ReportSettingResponse::defaultValue);
 
@@ -85,7 +85,7 @@ public class MyPageService {
     }
 
     private List<RecipientResponse> findRecipients(Long companyId) {
-        return monthlyReportRecipientRepository.findAllByCompanyId(companyId).stream()
+        return monthlyReportRecipientRepository.findAllByCompanyIdAndDeletedAtIsNullOrderByIdAsc(companyId).stream()
                 .map(RecipientResponse::of)
                 .toList();
     }
