@@ -1,6 +1,7 @@
 package com.aivle.sellon.domain.mypage.controller;
 
 import com.aivle.sellon.domain.mypage.dto.response.CompanyKeyResponse;
+import com.aivle.sellon.domain.mypage.dto.response.MyPageResponse;
 import com.aivle.sellon.domain.mypage.service.MyPageService;
 import com.aivle.sellon.global.common.ApiResponse;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
@@ -19,6 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class MyPageController {
 
     private final MyPageService myPageService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<MyPageResponse>> getMyPage(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ApiResponse.ok(myPageService.getMyPage(principal));
+    }
 
     @PostMapping("/company-key")
     public ResponseEntity<ApiResponse<CompanyKeyResponse>> issueCompanyKey(
