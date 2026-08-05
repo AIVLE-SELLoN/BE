@@ -23,6 +23,6 @@ public record ReportSettingResponse(
     }
 
     public static ReportSettingResponse defaultValue() {
-        return new ReportSettingResponse(false, 1, "09:00", List.of());
+        return new ReportSettingResponse(false, 1, "10:00", List.of());
     }
 }

@@ -32,4 +32,19 @@ public class MonthlyReportRecipient extends BaseEntity {
 
     @Column(nullable = false, length = 255)
     private String email;
+
+    private MonthlyReportRecipient(Company company, String department, String email) {
+        this.company = company;
+        this.department = department;
+        this.email = email;
+    }
+
+    public static MonthlyReportRecipient create(Company company, String department, String email) {
+        return new MonthlyReportRecipient(company, department, email);
+    }
+
+    public void update(String department, String email) {
+        this.department = department;
+        this.email = email;
+    }
 }
