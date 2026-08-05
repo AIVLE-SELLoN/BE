@@ -1,9 +1,6 @@
 package com.aivle.sellon.domain.report.service;
 
-import com.aivle.sellon.domain.company.entity.Company;
-import com.aivle.sellon.domain.company.exception.CompanyNotFoundException;
-import com.aivle.sellon.domain.company.repository.CompanyRepository;
-import com.aivle.sellon.domain.report.dto.message.MonthlyReportGeneratedMessage;
+import com.aivle.sellon.domain.report.dto.message.MonthlyReportPayload;
 import com.aivle.sellon.domain.report.dto.response.ReportResponse;
 import com.aivle.sellon.domain.report.entity.Report;
 import com.aivle.sellon.domain.report.repository.ReportRepository;
@@ -19,7 +16,6 @@ import java.util.List;
 public class ReportService {
 
     private final ReportRepository reportRepository;
-    private final CompanyRepository companyRepository;
 
     public List<ReportResponse> getReports(UserPrincipal principal) {
         return reportRepository.findAllByCompanyId(principal.getCompanyId()).stream()
@@ -28,20 +24,11 @@ public class ReportService {
     }
 
     @Transactional
-    public List<Report> saveGeneratedReports(MonthlyReportGeneratedMessage message) {
-        Company company = companyRepository.findById(message.companyId())
-                .orElseThrow(CompanyNotFoundException::new);
-
-        List<Report> reports = message.files().stream()
-                .map(file -> Report.create(
-                        company,
-                        file.originalFileName(),
-                        file.storedFileName(),
-                        file.fileSize(),
-                        file.generatedAt()
-                ))
-                .toList();
-
-        return reportRepository.saveAll(reports);
+    public void saveGeneratedReport(MonthlyReportPayload payload) {
+        reportRepository.findByReportId(payload.reportId())
+                .ifPresentOrElse(
+                        report -> report.update(payload),
+                        () -> reportRepository.save(Report.create(payload))
+                );
     }
 }

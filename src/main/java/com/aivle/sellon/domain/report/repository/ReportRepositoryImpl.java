@@ -6,6 +6,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class ReportRepositoryImpl implements ReportRepositoryCustom {
@@ -19,7 +20,17 @@ public class ReportRepositoryImpl implements ReportRepositoryCustom {
         return queryFactory
                 .selectFrom(report)
                 .where(report.company.id.eq(companyId))
-                .orderBy(report.generatedAt.desc())
+                .orderBy(report.id.desc())
                 .fetch();
+    }
+
+    @Override
+    public Optional<Report> findByReportId(String reportId) {
+        return Optional.ofNullable(
+                queryFactory
+                        .selectFrom(report)
+                        .where(report.reportId.eq(reportId))
+                        .fetchOne()
+        );
     }
 }

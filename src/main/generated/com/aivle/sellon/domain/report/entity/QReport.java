@@ -32,18 +32,24 @@ public class QReport extends EntityPathBase<Report> {
     //inherited
     public final DateTimePath<java.time.LocalDateTime> deletedAt = _super.deletedAt;
 
-    public final NumberPath<Long> fileSize = createNumber("fileSize", Long.class);
-
-    public final DateTimePath<java.time.LocalDateTime> generatedAt = createDateTime("generatedAt", java.time.LocalDateTime.class);
-
     public final NumberPath<Long> id = createNumber("id", Long.class);
 
-    public final StringPath originalFileName = createString("originalFileName");
+    public final StringPath noticeMessage = createString("noticeMessage");
 
-    public final StringPath storedFileName = createString("storedFileName");
+    public final QPdfS3Meta pdfS3Meta;
+
+    public final StringPath productGroupId = createString("productGroupId");
+
+    public final StringPath reportId = createString("reportId");
+
+    public final StringPath reportMonth = createString("reportMonth");
+
+    public final EnumPath<com.aivle.sellon.domain.report.enums.ReportStatus> status = createEnum("status", com.aivle.sellon.domain.report.enums.ReportStatus.class);
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> updatedAt = _super.updatedAt;
+
+    public final StringPath validationReport = createString("validationReport");
 
     public QReport(String variable) {
         this(Report.class, forVariable(variable), INITS);
@@ -64,6 +70,7 @@ public class QReport extends EntityPathBase<Report> {
     public QReport(Class<? extends Report> type, PathMetadata metadata, PathInits inits) {
         super(type, metadata, inits);
         this.company = inits.isInitialized("company") ? new com.aivle.sellon.domain.company.entity.QCompany(forProperty("company")) : null;
+        this.pdfS3Meta = inits.isInitialized("pdfS3Meta") ? new QPdfS3Meta(forProperty("pdfS3Meta")) : null;
     }
 
 }

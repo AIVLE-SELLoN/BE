@@ -1,26 +1,30 @@
 package com.aivle.sellon.domain.report.mq;
 
-import com.aivle.sellon.domain.report.dto.message.MonthlyReportGeneratedMessage;
-import com.aivle.sellon.domain.report.entity.Report;
-import com.aivle.sellon.domain.report.service.ReportMailService;
+import com.aivle.sellon.domain.report.dto.message.MonthlyReportPayload;
 import com.aivle.sellon.domain.report.service.ReportService;
 import com.aivle.sellon.global.mq.config.RabbitMQConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @Component
 @RequiredArgsConstructor
 public class MonthlyReportListener {
 
-    private final ReportService reportService;
-    private final ReportMailService reportMailService;
+    private static final String REPORT_GENERATED_EVENT_TYPE = "ai.report.generated";
 
-    @RabbitListener(queues = RabbitMQConfig.MONTHLY_REPORT_QUEUE)
-    public void onMonthlyReportGenerated(MonthlyReportGeneratedMessage message) {
-        List<Report> savedReports = reportService.saveGeneratedReports(message);
-        reportMailService.sendCompletionMail(savedReports);
+    private final ReportService reportService;
+    private final JsonMapper jsonMapper;
+
+    @RabbitListener(queues = RabbitMQConfig.MAIN_INBOUND_QUEUE)
+    public void onAiEvent(JsonNode envelope) {
+        String eventType = envelope.path("eventType").asString(null);
+        if (!REPORT_GENERATED_EVENT_TYPE.equals(eventType))
+            return;
+
+        MonthlyReportPayload payload = jsonMapper.treeToValue(envelope.get("payload"), MonthlyReportPayload.class);
+        reportService.saveGeneratedReport(payload);
     }
 }
