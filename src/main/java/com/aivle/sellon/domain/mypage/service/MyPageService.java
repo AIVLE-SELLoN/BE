@@ -62,6 +62,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -72,6 +73,8 @@ public class MyPageService {
     private static final int MIN_SEND_DAY = 1;
     private static final int MAX_SEND_DAY = 28;
     private static final String DEFAULT_IMAGE_CONTENT_TYPE = "image/jpeg";
+    private static final Pattern PROFILE_IMAGE_FILE_NAME =
+            Pattern.compile("\\d+-[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}\\.[A-Za-z]+");
 
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
@@ -373,10 +376,17 @@ public class MyPageService {
     }
 
     private void validateProfileImageObjectKey(User user, String objectKey) {
-        if (!objectKey.startsWith(profileImageKeyPrefix(user.getId())))
+        String prefix = profileImageKeyPrefix(user.getId());
+        if (!objectKey.startsWith(prefix))
             throw new InvalidObjectKeyException();
 
-        AcceptableFileType fileType = extractFileType(objectKey);
+        // 서버가 발급하는 파일명은 {timestamp}-{uuid}.{ext} 로 고정이다.
+        // 전체 일치 검사이므로 '/' 나 '..' 이 포함된 키는 여기서 전부 걸러진다.
+        String fileName = objectKey.substring(prefix.length());
+        if (!PROFILE_IMAGE_FILE_NAME.matcher(fileName).matches())
+            throw new InvalidObjectKeyException();
+
+        AcceptableFileType fileType = extractFileType(fileName);
         if (fileType == null || !FileDirectory.PROFILE.allows(fileType))
             throw new InvalidObjectKeyException();
     }

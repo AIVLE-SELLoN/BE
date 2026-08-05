@@ -600,6 +600,24 @@ class MyPageServiceTest {
     }
 
     @Test
+    @DisplayName("경로 순회가 포함된 objectKey 로 완료 통보하면 InvalidObjectKeyException 이 발생한다")
+    void completeProfileImageUpload_pathTraversalObjectKey_throwsInvalidObjectKeyException() {
+        UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
+        Company company = Company.create("마르디 메크르디");
+        User user = User.createMember("member@example.com", "password", "김유진", company);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
+
+        // 접두사 검사만으로는 통과하지만 파일명 형식 검사에서 걸려야 한다
+        ProfileImageCompleteRequest request = new ProfileImageCompleteRequest(
+                "profiles/user-images/1/original/../../3/original/1721890000-11111111-2222-3333-4444-555555555555.jpg");
+
+        assertThrows(InvalidObjectKeyException.class,
+                () -> myPageService.completeProfileImageUpload(principal, request));
+        verifyNoInteractions(s3Client);
+    }
+
+    @Test
     @DisplayName("HeadObject 결과가 5MB 를 초과하면 FileSizeExceededException 이 발생하고 S3 객체를 삭제한다")
     void completeProfileImageUpload_headObjectExceedsSize_deletesObjectAndThrows() {
         UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
@@ -608,7 +626,7 @@ class MyPageServiceTest {
         ReflectionTestUtils.setField(user, "id", 1L);
         when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
 
-        String objectKey = "profiles/user-images/1/original/1721897234-uuid.jpg";
+        String objectKey = "profiles/user-images/1/original/1721897234-a3f4c9e2-b7d1-4f2a-9e6c-2a5f8b3d1c7a.jpg";
         HeadObjectResponse headObjectResponse = HeadObjectResponse.builder()
                 .contentLength(6 * 1024 * 1024L)
                 .build();
@@ -628,11 +646,11 @@ class MyPageServiceTest {
         Company company = Company.create("마르디 메크르디");
         User user = User.createMember("member@example.com", "password", "김유진", company);
         ReflectionTestUtils.setField(user, "id", 1L);
-        String previousObjectKey = "profiles/user-images/1/original/1721890000-old.jpg";
+        String previousObjectKey = "profiles/user-images/1/original/1721890000-11111111-2222-3333-4444-555555555555.jpg";
         user.changeProfileImage(previousObjectKey);
         when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
 
-        String newObjectKey = "profiles/user-images/1/original/1721897234-new.jpg";
+        String newObjectKey = "profiles/user-images/1/original/1721897234-66666666-7777-8888-9999-aaaaaaaaaaaa.jpg";
         HeadObjectResponse headObjectResponse = HeadObjectResponse.builder()
                 .contentLength(1_000_000L)
                 .build();
