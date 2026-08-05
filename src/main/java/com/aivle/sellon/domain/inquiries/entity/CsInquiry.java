@@ -67,7 +67,7 @@ public class CsInquiry extends BaseEntity {
         this.inquiryStatus = InquiryStatus.DISCUSSING;
     }
 
-    public void clear() {
-        this.inquiryStatus = InquiryStatus.CLEARED;
-    }
+//    public void clear() {
+//        this.inquiryStatus = InquiryStatus.CLEARED;
+//    }
 }
