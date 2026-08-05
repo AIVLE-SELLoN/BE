@@ -55,6 +55,8 @@ dependencies {
 	// Apache Kafka
 
 	// AWS
+	implementation platform('software.amazon.awssdk:bom:2.31.0')
+	implementation 'software.amazon.awssdk:s3'
 
 	// K8s
 
