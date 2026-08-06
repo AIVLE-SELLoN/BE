@@ -53,3 +53,17 @@ spring:
       expire: 300000
     token:
       expire: 1800000
+
+raw-db:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/raw_db
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password:
+
+aws:
+  opensearch:
+    host: ${AWS_OPENSEARCH_HOST}
+    region: ${AWS_OPENSEARCH_REGION:ap-northeast-2}
+    access-key: ${AWS_OPENSEARCH_ACCESS_KEY}
+    secret-key: ${AWS_OPENSEARCH_SECRET_KEY}
