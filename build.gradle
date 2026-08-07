@@ -52,9 +52,6 @@ dependencies {
 	// Mail
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 
-	// .env 파일 로드
-	developmentOnly 'me.paulschwarz:spring-dotenv:4.0.0'
-
 	// Apache Kafka
 
 	// RabbitMQ

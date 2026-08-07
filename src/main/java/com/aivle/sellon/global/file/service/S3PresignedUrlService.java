@@ -15,7 +15,7 @@ public class S3PresignedUrlService {
 
     private final S3Presigner s3Presigner;
 
-    @Value("${aws.s3.bucket}")
+    @Value("${cloud.aws.s3.report.bucket}")
     private String bucket;
 
     public String generateDownloadUrl(String key, Duration expiration) {
