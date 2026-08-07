@@ -37,4 +37,21 @@ public class MonthlyReportSetting extends BaseEntity {
 
     @Column(nullable = false)
     private LocalTime sendTime;
+
+    private MonthlyReportSetting(Company company, boolean enabled, int sendDay, LocalTime sendTime) {
+        this.company = company;
+        this.enabled = enabled;
+        this.sendDay = sendDay;
+        this.sendTime = sendTime;
+    }
+
+    public static MonthlyReportSetting create(Company company, boolean enabled, int sendDay, LocalTime sendTime) {
+        return new MonthlyReportSetting(company, enabled, sendDay, sendTime);
+    }
+
+    public void update(boolean enabled, int sendDay, LocalTime sendTime) {
+        this.enabled = enabled;
+        this.sendDay = sendDay;
+        this.sendTime = sendTime;
+    }
 }

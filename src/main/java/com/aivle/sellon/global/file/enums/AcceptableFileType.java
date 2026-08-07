@@ -8,8 +8,8 @@ import java.util.Arrays;
 @Getter
 @RequiredArgsConstructor
 public enum AcceptableFileType {
-    PDF("pdf" , "report/pdf"),
-    JPG("jpg" , "image/jpg") ,
+    PDF("pdf" , "application/pdf"),
+    JPG("jpg" , "image/jpeg") ,
     JPEG("jpeg" , "image/jpeg"),
     PNG("png" , "image/png");
 

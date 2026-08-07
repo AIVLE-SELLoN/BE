@@ -45,6 +45,9 @@ public class User extends BaseEntity {
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
+    @Column(length = 512)
+    private String profileImageKey;
+
     private User(String email, String password, String name, Role role, Company company) {
         this.email = email;
         this.password = password;
@@ -63,5 +66,17 @@ public class User extends BaseEntity {
 
     public void withdraw() {
         delete();
+    }
+
+    public void changeEmail(String email) {
+        this.email = email;
+    }
+
+    public void changeProfileImage(String profileImageKey) {
+        this.profileImageKey = profileImageKey;
+    }
+
+    public void removeProfileImage() {
+        this.profileImageKey = null;
     }
 }

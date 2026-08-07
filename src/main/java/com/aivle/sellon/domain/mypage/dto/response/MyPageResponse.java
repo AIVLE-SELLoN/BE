@@ -11,13 +11,15 @@ public record MyPageResponse(
         String companyKey,
         boolean companyKeyIssued,
         EditableResponse editable,
-        ReportSettingResponse reportSetting
+        ReportSettingResponse reportSetting,
+        String profileImageUrl
 ) {
     public static MyPageResponse of(
             User user,
             String companyKey,
             boolean companyKeyIssued,
-            ReportSettingResponse reportSetting
+            ReportSettingResponse reportSetting,
+            String profileImageUrl
     ) {
         return new MyPageResponse(
                 user.getEmail(),
@@ -27,7 +29,8 @@ public record MyPageResponse(
                 companyKey,
                 companyKeyIssued,
                 EditableResponse.of(user.getRole()),
-                reportSetting
+                reportSetting,
+                profileImageUrl
         );
     }
 }

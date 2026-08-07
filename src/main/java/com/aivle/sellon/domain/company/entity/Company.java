@@ -36,4 +36,8 @@ public class Company extends BaseEntity {
     public void issueJoinKey(String joinKey) {
         this.joinKey = joinKey;
     }
+
+    public void rename(String name) {
+        this.name = name;
+    }
 }
