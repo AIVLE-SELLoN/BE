@@ -38,6 +38,7 @@ out/
 
 ### yaml ###
 /src/main/resources/application.yaml
+/src/main/resources/application-local.yaml
 .DS_Store
 
 ### env ###
@@ -46,3 +47,6 @@ out/
 
 ### local db ###
 docker-compose.yml
+
+### IDE run config (환경변수에 자격증명 포함) ###
+.run/
