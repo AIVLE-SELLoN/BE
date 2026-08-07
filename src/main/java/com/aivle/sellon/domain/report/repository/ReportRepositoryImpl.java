@@ -25,11 +25,14 @@ public class ReportRepositoryImpl implements ReportRepositoryCustom {
     }
 
     @Override
-    public Optional<Report> findByReportId(String reportId) {
+    public Optional<Report> findByCompanyIdAndReportId(Long companyId, String reportId) {
         return Optional.ofNullable(
                 queryFactory
                         .selectFrom(report)
-                        .where(report.reportId.eq(reportId))
+                        .where(
+                                report.company.id.eq(companyId),
+                                report.reportId.eq(reportId)
+                        )
                         .fetchOne()
         );
     }

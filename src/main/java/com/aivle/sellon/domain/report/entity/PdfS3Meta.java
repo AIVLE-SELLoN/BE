@@ -24,12 +24,16 @@ public class PdfS3Meta {
     @Column(length = 2048)
     private String presignedUrl;
 
+    // BaseEntity의 감사 컬럼(created_date)과 구분하기 위해 명시적으로 이름을 준다
+    @Column(name = "pdf_created_at")
+    private LocalDateTime createdAt;
+
     private LocalDateTime presignedExpiresAt;
     private LocalDateTime objectExpiresAt;
 
     private PdfS3Meta(String s3BucketName, String s3FilePath, String originalFileName, String newFileName,
                        String s3FullKey, String fileExtension, Long fileSizeBytes, String presignedUrl,
-                       LocalDateTime presignedExpiresAt, LocalDateTime objectExpiresAt) {
+                       LocalDateTime createdAt, LocalDateTime presignedExpiresAt, LocalDateTime objectExpiresAt) {
         this.s3BucketName = s3BucketName;
         this.s3FilePath = s3FilePath;
         this.originalFileName = originalFileName;
@@ -38,14 +42,16 @@ public class PdfS3Meta {
         this.fileExtension = fileExtension;
         this.fileSizeBytes = fileSizeBytes;
         this.presignedUrl = presignedUrl;
+        this.createdAt = createdAt;
         this.presignedExpiresAt = presignedExpiresAt;
         this.objectExpiresAt = objectExpiresAt;
     }
 
     public static PdfS3Meta of(String s3BucketName, String s3FilePath, String originalFileName, String newFileName,
                                 String s3FullKey, String fileExtension, Long fileSizeBytes, String presignedUrl,
-                                LocalDateTime presignedExpiresAt, LocalDateTime objectExpiresAt) {
+                                LocalDateTime createdAt, LocalDateTime presignedExpiresAt,
+                                LocalDateTime objectExpiresAt) {
         return new PdfS3Meta(s3BucketName, s3FilePath, originalFileName, newFileName, s3FullKey, fileExtension,
-                fileSizeBytes, presignedUrl, presignedExpiresAt, objectExpiresAt);
+                fileSizeBytes, presignedUrl, createdAt, presignedExpiresAt, objectExpiresAt);
     }
 }

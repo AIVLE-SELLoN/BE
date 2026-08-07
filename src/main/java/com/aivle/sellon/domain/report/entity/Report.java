@@ -16,6 +16,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,6 +28,10 @@ import java.time.ZoneOffset;
 
 @Entity
 @Getter
+@Table(uniqueConstraints = @UniqueConstraint(
+        name = "uk_report_company_report_id",
+        columnNames = {"company_id", "report_id"}
+))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Report extends BaseEntity {
 
@@ -33,16 +39,13 @@ public class Report extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // product_group_id -> company 매핑이 아직 없어 항상 null (도메인 추가 전까지 보류)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id")
+    @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
-    @Column(nullable = false, unique = true)
-    private String reportId;
-
+    // 월 1건 합본이라 reportId 형식은 RPT-{YYYYMM}. 회사 구분자가 없어 단독으로는 유일하지 않다
     @Column(nullable = false)
-    private String productGroupId;
+    private String reportId;
 
     @Column(nullable = false)
     private String reportMonth;
@@ -51,6 +54,7 @@ public class Report extends BaseEntity {
     @Column(nullable = false)
     private ReportStatus status;
 
+    @Column(length = 1000)
     private String noticeMessage;
 
     @Column(columnDefinition = "TEXT")
@@ -59,14 +63,14 @@ public class Report extends BaseEntity {
     @Embedded
     private PdfS3Meta pdfS3Meta;
 
-    private Report(String reportId, String productGroupId, String reportMonth) {
+    private Report(Company company, String reportId, String reportMonth) {
+        this.company = company;
         this.reportId = reportId;
-        this.productGroupId = productGroupId;
         this.reportMonth = reportMonth;
     }
 
-    public static Report create(MonthlyReportPayload payload) {
-        Report report = new Report(payload.reportId(), payload.productGroupId(), payload.reportMonth());
+    public static Report create(MonthlyReportPayload payload, Company company) {
+        Report report = new Report(company, payload.reportId(), payload.reportMonth());
         report.update(payload);
         return report;
     }
@@ -91,6 +95,7 @@ public class Report extends BaseEntity {
                 payload.fileExtension(),
                 payload.fileSizeBytes(),
                 payload.presignedUrl(),
+                toLocalDateTime(payload.createdAt()),
                 toLocalDateTime(payload.presignedExpiresAt()),
                 toLocalDateTime(payload.objectExpiresAt())
         );

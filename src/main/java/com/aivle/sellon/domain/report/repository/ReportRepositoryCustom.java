@@ -8,5 +8,5 @@ import java.util.Optional;
 public interface ReportRepositoryCustom {
     List<Report> findAllByCompanyId(Long companyId);
 
-    Optional<Report> findByReportId(String reportId);
+    Optional<Report> findByCompanyIdAndReportId(Long companyId, String reportId);
 }

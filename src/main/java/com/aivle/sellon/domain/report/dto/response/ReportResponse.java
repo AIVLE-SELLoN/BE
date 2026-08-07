@@ -7,25 +7,23 @@ import com.aivle.sellon.domain.report.enums.ReportStatus;
 public record ReportResponse(
         Long id,
         String reportId,
-        String productGroupId,
         String reportMonth,
         ReportStatus status,
         String noticeMessage,
         String originalFileName,
-        String presignedUrl
+        String downloadUrl
 ) {
-    public static ReportResponse of(Report report) {
+    public static ReportResponse of(Report report, String downloadUrl) {
         PdfS3Meta meta = report.getPdfS3Meta();
 
         return new ReportResponse(
                 report.getId(),
                 report.getReportId(),
-                report.getProductGroupId(),
                 report.getReportMonth(),
                 report.getStatus(),
                 report.getNoticeMessage(),
                 meta != null ? meta.getOriginalFileName() : null,
-                meta != null ? meta.getPresignedUrl() : null
+                downloadUrl
         );
     }
 }

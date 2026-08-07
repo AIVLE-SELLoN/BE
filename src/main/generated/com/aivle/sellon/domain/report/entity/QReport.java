@@ -38,8 +38,6 @@ public class QReport extends EntityPathBase<Report> {
 
     public final QPdfS3Meta pdfS3Meta;
 
-    public final StringPath productGroupId = createString("productGroupId");
-
     public final StringPath reportId = createString("reportId");
 
     public final StringPath reportMonth = createString("reportMonth");

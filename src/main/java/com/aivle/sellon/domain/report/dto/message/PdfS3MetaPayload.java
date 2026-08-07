@@ -15,6 +15,7 @@ public record PdfS3MetaPayload(
         String fileExtension,
         Long fileSizeBytes,
         String presignedUrl,
+        Instant createdAt,
         Instant presignedExpiresAt,
         Instant objectExpiresAt
 ) {
