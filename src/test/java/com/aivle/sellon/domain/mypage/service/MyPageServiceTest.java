@@ -4,14 +4,19 @@ import com.aivle.sellon.domain.company.entity.Company;
 import com.aivle.sellon.domain.company.repository.CompanyRepository;
 import com.aivle.sellon.domain.company.util.CompanyKeyGenerator;
 import com.aivle.sellon.domain.mypage.dto.request.MyPageUpdateRequest;
+import com.aivle.sellon.domain.mypage.dto.request.ProfileImageCompleteRequest;
+import com.aivle.sellon.domain.mypage.dto.request.ProfileImagePresignedUrlRequest;
 import com.aivle.sellon.domain.mypage.dto.request.RecipientRequest;
 import com.aivle.sellon.domain.mypage.dto.request.ReportSettingRequest;
 import com.aivle.sellon.domain.mypage.dto.response.MyPageResponse;
+import com.aivle.sellon.domain.mypage.dto.response.ProfileImagePresignedUrlResponse;
 import com.aivle.sellon.domain.mypage.entity.MonthlyReportRecipient;
 import com.aivle.sellon.domain.mypage.entity.MonthlyReportSetting;
 import com.aivle.sellon.domain.mypage.exception.CompanyKeyNotIssuedException;
 import com.aivle.sellon.domain.mypage.exception.DuplicateRecipientEmailException;
 import com.aivle.sellon.domain.mypage.exception.FieldNotEditableException;
+import com.aivle.sellon.domain.mypage.exception.FileSizeExceededException;
+import com.aivle.sellon.domain.mypage.exception.InvalidObjectKeyException;
 import com.aivle.sellon.domain.mypage.exception.InvalidSendDayException;
 import com.aivle.sellon.domain.mypage.exception.NotCompanyOwnerException;
 import com.aivle.sellon.domain.mypage.exception.RecipientNotOwnedException;
@@ -25,16 +30,29 @@ import com.aivle.sellon.domain.user.exception.DuplicateEmailException;
 import com.aivle.sellon.domain.user.repository.UserRepository;
 import com.aivle.sellon.domain.verification.exception.EmailNotVerifiedException;
 import com.aivle.sellon.domain.verification.service.EmailVerificationService;
+import com.aivle.sellon.global.file.exception.InvalidExtensionException;
+import com.aivle.sellon.global.file.utils.GlobalFileValidator;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+import java.net.URI;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -48,6 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -76,6 +95,15 @@ class MyPageServiceTest {
 
     @Mock
     private EmailVerificationService emailVerificationService;
+
+    @Spy
+    private GlobalFileValidator globalFileValidator = new GlobalFileValidator();
+
+    @Mock
+    private S3Client s3Client;
+
+    @Mock
+    private S3Presigner s3Presigner;
 
     @InjectMocks
     private MyPageService myPageService;
@@ -168,7 +196,7 @@ class MyPageServiceTest {
     }
 
     @Test
-    @DisplayName("설정 행이 없으면 기본값(false / 1 / 09:00 / [])을 반환한다")
+    @DisplayName("설정 행이 없으면 기본값(false / 1 / 10:00 / [])을 반환한다")
     void getMyPage_noSettingRow_returnsDefaultReportSetting() {
         UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
         Company company = Company.create("마르디 메크르디");
@@ -179,7 +207,7 @@ class MyPageServiceTest {
 
         assertFalse(response.reportSetting().enabled());
         assertEquals(1, response.reportSetting().sendDay());
-        assertEquals("09:00", response.reportSetting().sendTime());
+        assertEquals("10:00", response.reportSetting().sendTime());
         assertTrue(response.reportSetting().recipients().isEmpty());
     }
 
@@ -491,5 +519,181 @@ class MyPageServiceTest {
         assertEquals(2, response.reportSetting().recipients().size());
         assertEquals("mkt@example.com", response.reportSetting().recipients().get(0).email());
         assertEquals("cs@example.com", response.reportSetting().recipients().get(1).email());
+    }
+
+    @Test
+    @DisplayName("확장자가 .pdf 인 파일명으로 presigned 요청을 하면 InvalidExtensionException 이 발생한다")
+    void issueProfileImagePresignedUrl_pdfExtension_throwsInvalidExtensionException() {
+        UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
+        Company company = Company.create("마르디 메크르디");
+        User user = User.createMember("member@example.com", "password", "김유진", company);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
+
+        ProfileImagePresignedUrlRequest request = new ProfileImagePresignedUrlRequest("photo.pdf", 1_000_000L);
+
+        assertThrows(InvalidExtensionException.class,
+                () -> myPageService.issueProfileImagePresignedUrl(principal, request));
+    }
+
+    @Test
+    @DisplayName("확장자가 없는 파일명으로 presigned 요청을 하면 InvalidExtensionException 이 발생한다")
+    void issueProfileImagePresignedUrl_noExtension_throwsInvalidExtensionException() {
+        UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
+        Company company = Company.create("마르디 메크르디");
+        User user = User.createMember("member@example.com", "password", "김유진", company);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
+
+        ProfileImagePresignedUrlRequest request = new ProfileImagePresignedUrlRequest("photo", 1_000_000L);
+
+        assertThrows(InvalidExtensionException.class,
+                () -> myPageService.issueProfileImagePresignedUrl(principal, request));
+    }
+
+    @Test
+    @DisplayName("fileSize 가 5MB 를 초과하면 FileSizeExceededException 이 발생한다")
+    void issueProfileImagePresignedUrl_fileSizeExceeded_throwsFileSizeExceededException() {
+        UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
+        Company company = Company.create("마르디 메크르디");
+        User user = User.createMember("member@example.com", "password", "김유진", company);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
+
+        ProfileImagePresignedUrlRequest request = new ProfileImagePresignedUrlRequest("photo.jpg", 6 * 1024 * 1024L);
+
+        assertThrows(FileSizeExceededException.class,
+                () -> myPageService.issueProfileImagePresignedUrl(principal, request));
+    }
+
+    @Test
+    @DisplayName("정상 요청이면 객체 키가 profiles/user-images/{userId}/original/ 로 시작한다")
+    void issueProfileImagePresignedUrl_valid_objectKeyStartsWithExpectedPrefix() throws Exception {
+        UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
+        Company company = Company.create("마르디 메크르디");
+        User user = User.createMember("member@example.com", "password", "김유진", company);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
+
+        PresignedPutObjectRequest presignedPutObjectRequest = mock(PresignedPutObjectRequest.class);
+        when(presignedPutObjectRequest.url()).thenReturn(URI.create("https://bucket.s3.amazonaws.com/signed").toURL());
+        when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(presignedPutObjectRequest);
+
+        ProfileImagePresignedUrlRequest request = new ProfileImagePresignedUrlRequest("photo.jpg", 1_000_000L);
+
+        ProfileImagePresignedUrlResponse response = myPageService.issueProfileImagePresignedUrl(principal, request);
+
+        assertTrue(response.objectKey().startsWith("profiles/user-images/1/original/"));
+    }
+
+    @Test
+    @DisplayName("타인 경로의 objectKey 로 완료 통보하면 InvalidObjectKeyException 이 발생한다")
+    void completeProfileImageUpload_foreignObjectKey_throwsInvalidObjectKeyException() {
+        UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
+        Company company = Company.create("마르디 메크르디");
+        User user = User.createMember("member@example.com", "password", "김유진", company);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
+
+        ProfileImageCompleteRequest request =
+                new ProfileImageCompleteRequest("profiles/user-images/999/original/1721897234-uuid.jpg");
+
+        assertThrows(InvalidObjectKeyException.class,
+                () -> myPageService.completeProfileImageUpload(principal, request));
+    }
+
+    @Test
+    @DisplayName("경로 순회가 포함된 objectKey 로 완료 통보하면 InvalidObjectKeyException 이 발생한다")
+    void completeProfileImageUpload_pathTraversalObjectKey_throwsInvalidObjectKeyException() {
+        UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
+        Company company = Company.create("마르디 메크르디");
+        User user = User.createMember("member@example.com", "password", "김유진", company);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
+
+        // 접두사 검사만으로는 통과하지만 파일명 형식 검사에서 걸려야 한다
+        ProfileImageCompleteRequest request = new ProfileImageCompleteRequest(
+                "profiles/user-images/1/original/../../3/original/1721890000-11111111-2222-3333-4444-555555555555.jpg");
+
+        assertThrows(InvalidObjectKeyException.class,
+                () -> myPageService.completeProfileImageUpload(principal, request));
+        verifyNoInteractions(s3Client);
+    }
+
+    @Test
+    @DisplayName("HeadObject 결과가 5MB 를 초과하면 FileSizeExceededException 이 발생하고 S3 객체를 삭제한다")
+    void completeProfileImageUpload_headObjectExceedsSize_deletesObjectAndThrows() {
+        UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
+        Company company = Company.create("마르디 메크르디");
+        User user = User.createMember("member@example.com", "password", "김유진", company);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
+
+        String objectKey = "profiles/user-images/1/original/1721897234-a3f4c9e2-b7d1-4f2a-9e6c-2a5f8b3d1c7a.jpg";
+        HeadObjectResponse headObjectResponse = HeadObjectResponse.builder()
+                .contentLength(6 * 1024 * 1024L)
+                .build();
+        when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(headObjectResponse);
+
+        ProfileImageCompleteRequest request = new ProfileImageCompleteRequest(objectKey);
+
+        assertThrows(FileSizeExceededException.class,
+                () -> myPageService.completeProfileImageUpload(principal, request));
+        verify(s3Client).deleteObject(any(DeleteObjectRequest.class));
+    }
+
+    @Test
+    @DisplayName("이전 이미지가 있는 상태에서 교체하면 이전 키로 deleteObject 를 호출한다")
+    void completeProfileImageUpload_replacesExistingImage_deletesPreviousObject() throws Exception {
+        UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
+        Company company = Company.create("마르디 메크르디");
+        User user = User.createMember("member@example.com", "password", "김유진", company);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        String previousObjectKey = "profiles/user-images/1/original/1721890000-11111111-2222-3333-4444-555555555555.jpg";
+        user.changeProfileImage(previousObjectKey);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
+
+        String newObjectKey = "profiles/user-images/1/original/1721897234-66666666-7777-8888-9999-aaaaaaaaaaaa.jpg";
+        HeadObjectResponse headObjectResponse = HeadObjectResponse.builder()
+                .contentLength(1_000_000L)
+                .build();
+        when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(headObjectResponse);
+
+        PresignedGetObjectRequest presignedGetObjectRequest = mock(PresignedGetObjectRequest.class);
+        when(presignedGetObjectRequest.url()).thenReturn(URI.create("https://bucket.s3.amazonaws.com/get").toURL());
+        when(s3Presigner.presignGetObject(any(GetObjectPresignRequest.class))).thenReturn(presignedGetObjectRequest);
+
+        ProfileImageCompleteRequest request = new ProfileImageCompleteRequest(newObjectKey);
+
+        myPageService.completeProfileImageUpload(principal, request);
+
+        ArgumentCaptor<DeleteObjectRequest> captor = ArgumentCaptor.forClass(DeleteObjectRequest.class);
+        verify(s3Client).deleteObject(captor.capture());
+        assertEquals(previousObjectKey, captor.getValue().key());
+    }
+
+    @Test
+    @DisplayName("profileImageKey 가 null 이면 profileImageUrl 도 null 이고 presigner 를 호출하지 않는다")
+    void getMyPage_noProfileImage_profileImageUrlNullAndPresignerNotCalled() {
+        UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
+        Company company = Company.create("마르디 메크르디");
+        User user = User.createMember("member@example.com", "password", "김유진", company);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
+
+        MyPageResponse response = myPageService.getMyPage(principal);
+
+        assertNull(response.profileImageUrl());
+        verifyNoInteractions(s3Presigner);
+    }
+
+    @Test
+    @DisplayName("이미 프로필 이미지가 없는 상태에서 삭제를 요청하면 예외 없이 정상 응답한다")
+    void removeProfileImage_alreadyNull_returnsNormallyWithoutException() {
+        UserPrincipal principal = UserPrincipal.ofClaims(1L, "member@example.com", Role.MEMBER, 10L);
+        Company company = Company.create("마르디 메크르디");
+        User user = User.createMember("member@example.com", "password", "김유진", company);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
+
+        MyPageResponse response = myPageService.removeProfileImage(principal);
+
+        assertNull(response.profileImageUrl());
+        verifyNoInteractions(s3Client);
     }
 }
