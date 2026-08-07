@@ -13,6 +13,7 @@ import com.aivle.sellon.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -39,8 +40,13 @@ public class ReportMailDeliveryService {
     /**
      * 수신자 1명당 예약 1건을 만든다. 같은 메시지가 재전달돼도
      * (report_id, email)이 이미 있으면 건너뛰므로 중복 발송되지 않는다.
+     * <p>
+     * REQUIRES_NEW인 이유: 이 메서드는 AFTER_COMMIT 콜백에서 호출되는데, 그 시점에는 커밋이 끝났어도
+     * EntityManager가 아직 스레드에 바인딩돼 있다(정리는 afterCompletion에서 일어난다).
+     * 기본값인 REQUIRED로 두면 Spring이 "트랜잭션이 있다"고 판단해 이미 끝난 트랜잭션에 조인하고,
+     * 저장이 커밋되지 않은 채 예외도 없이 사라진다.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void scheduleFor(Long reportId, Long companyId) {
         MonthlyReportSetting setting = settingRepository.findByCompanyIdAndDeletedAtIsNull(companyId).orElse(null);
         if (setting != null && !setting.isEnabled()) {
