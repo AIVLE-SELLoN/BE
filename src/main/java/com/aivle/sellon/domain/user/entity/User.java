@@ -64,4 +64,8 @@ public class User extends BaseEntity {
     public void withdraw() {
         delete();
     }
+
+    public void changeEmail(String email) {
+        this.email = email;
+    }
 }

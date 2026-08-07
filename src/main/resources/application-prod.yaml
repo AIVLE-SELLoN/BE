@@ -44,3 +44,11 @@ cloud:
         bucket: ${AWS_S3_IMAGE_BUCKET}
         access-key: ${AWS_S3_IMAGE_ACCESS_KEY}
         secret-key: ${AWS_S3_IMAGE_SECRET_KEY}
+
+# TODO: 실제 prod raw-db 접속 정보로 확정 필요 (env var 이름은 가정)
+raw-db:
+  datasource:
+    url: ${RAW_DB_URL}
+    driver-class-name: org.postgresql.Driver
+    username: ${RAW_DB_USERNAME}
+    password: ${RAW_DB_PASSWORD}
