@@ -19,16 +19,16 @@ public class OpenSearchConfig {
 
     private static final String SIGNING_SERVICE_NAME = "es";
 
-    @Value("${aws.opensearch.host}")
+    @Value("${cloud.aws.opensearch.host}")
     private String host;
 
-    @Value("${aws.opensearch.region}")
+    @Value("${cloud.aws.opensearch.region}")
     private String region;
 
-    @Value("${aws.opensearch.access-key}")
+    @Value("${cloud.aws.opensearch.access-key}")
     private String accessKey;
 
-    @Value("${aws.opensearch.secret-key}")
+    @Value("${cloud.aws.opensearch.secret-key}")
     private String secretKey;
 
     @Bean(destroyMethod = "close")
