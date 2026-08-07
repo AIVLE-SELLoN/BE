@@ -1,5 +1,6 @@
 package com.aivle.sellon.global.mq.config;
 
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -7,9 +8,12 @@ import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.boot.amqp.autoconfigure.RabbitListenerRetrySettingsCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.util.List;
 
 @Configuration
 public class RabbitMQConfig {
@@ -44,5 +48,15 @@ public class RabbitMQConfig {
     @Bean
     public MessageConverter jsonMessageConverter(JsonMapper jsonMapper) {
         return new JacksonJsonMessageConverter(jsonMapper);
+    }
+
+    /**
+     * 재시도해도 소용없다고 리스너가 판단한 실패(AmqpRejectAndDontRequeueException)는
+     * 재시도 대상에서 뺀다. 이게 없으면 잘못된 payload 하나가 2초 간격으로 5번 재시도된 뒤에야
+     * DLQ로 가서, 즉시 DLQ로 보내려던 의도가 사라진다.
+     */
+    @Bean
+    public RabbitListenerRetrySettingsCustomizer nonRetryableFailureCustomizer() {
+        return settings -> settings.setExceptionExcludes(List.of(AmqpRejectAndDontRequeueException.class));
     }
 }

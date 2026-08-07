@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 
 @Entity
 @Getter
@@ -34,6 +34,9 @@ import java.time.ZoneOffset;
 ))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Report extends BaseEntity {
+
+    // 큐로 오는 S3 메타 시각은 Instant(UTC)라, BaseEntity 감사 컬럼과 같은 KST 벽시계로 맞춰 저장한다
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -102,6 +105,6 @@ public class Report extends BaseEntity {
     }
 
     private static LocalDateTime toLocalDateTime(Instant instant) {
-        return instant != null ? LocalDateTime.ofInstant(instant, ZoneOffset.UTC) : null;
+        return instant != null ? LocalDateTime.ofInstant(instant, KST) : null;
     }
 }

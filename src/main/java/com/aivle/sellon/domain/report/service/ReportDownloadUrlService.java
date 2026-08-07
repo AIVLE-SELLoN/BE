@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 
 /**
  * 저장된 presigned URL은 발급 +7일이면 만료되는데 리포트는 6개월 살아있다.
@@ -38,6 +37,6 @@ public class ReportDownloadUrlService {
 
     private boolean isObjectExpired(PdfS3Meta meta) {
         LocalDateTime objectExpiresAt = meta.getObjectExpiresAt();
-        return objectExpiresAt != null && objectExpiresAt.isBefore(LocalDateTime.now(ZoneOffset.UTC));
+        return objectExpiresAt != null && objectExpiresAt.isBefore(LocalDateTime.now());
     }
 }
