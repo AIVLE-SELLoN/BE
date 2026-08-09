@@ -82,7 +82,13 @@ public class Report extends BaseEntity {
         this.status = payload.status();
         this.noticeMessage = payload.noticeMessage();
         this.validationReport = payload.validationReport() != null ? payload.validationReport().toString() : null;
-        this.pdfS3Meta = toPdfS3Meta(payload.pdfS3Meta());
+
+        // FAILED_* 페이로드는 pdf_s3_meta가 비어 있다.
+        // 그대로 대입하면 앞서 SUCCESS로 만들어둔 PDF 참조가 지워지는데, S3의 파일은 그대로 살아있고 발송을 기다리던 메일 예약도 그 PDF를 가리키고 있다.
+        // 실제로 새 PDF가 왔을 때만 교체한다.
+        PdfS3Meta incoming = toPdfS3Meta(payload.pdfS3Meta());
+        if (incoming != null)
+            this.pdfS3Meta = incoming;
     }
 
     private static PdfS3Meta toPdfS3Meta(PdfS3MetaPayload payload) {

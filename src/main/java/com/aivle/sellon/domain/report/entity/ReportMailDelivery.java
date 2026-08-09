@@ -96,7 +96,21 @@ public class ReportMailDelivery extends BaseEntity {
     }
 
     /**
-     * 재시도해도 결과가 같은 실패(PDF가 이미 삭제된 경우 등)는 횟수를 남기지 않고 즉시 포기한다.
+     * 포기했던 예약을 같은 행에서 다시 살린다.
+
+     * 새 행을 만들지 않는 이유는 유니크 제약 (report_id, email) 때문이고,
+     * 시도 횟수를 0으로 되돌리는 이유는 MAX_ATTEMPTS 를 이미 채운 행이면
+     * 되살려도 발송 대상 조회에 걸리지 않기 때문이다.
+     */
+    public void reschedule(LocalDateTime scheduledAt) {
+        this.status = ReportMailDeliveryStatus.PENDING;
+        this.scheduledAt = scheduledAt;
+        this.attemptCount = 0;
+        this.lastError = null;
+    }
+
+    /**
+     * 재시도해도 결과가 같은 실패(PDF가 이미 삭제된 경우 등)는 시도 1회로 기록하고 즉시 포기한다.
      */
     public void giveUp(String reason) {
         this.attemptCount++;

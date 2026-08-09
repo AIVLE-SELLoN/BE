@@ -39,7 +39,20 @@ public class ReportMailScheduler {
                 deliveryService.process(deliveryId);
             } catch (Exception e) {
                 log.error("월간 보고서 메일 처리 중 예외. deliveryId={}", deliveryId, e);
+                recordFailure(deliveryId, e);
             }
+        }
+    }
+
+    /**
+     * process()의 트랜잭션이 롤백돼 실패가 남지 않은 경우를 메운다.
+     * 여기서 또 실패하면 다음 주기에 같은 건을 다시 만나게 되지만, 배치는 계속 진행시킨다.
+     */
+    private void recordFailure(Long deliveryId, Exception cause) {
+        try {
+            deliveryService.recordFailure(deliveryId, cause.getMessage());
+        } catch (Exception e) {
+            log.error("월간 보고서 메일 실패 기록 실패. deliveryId={}", deliveryId, e);
         }
     }
 }
