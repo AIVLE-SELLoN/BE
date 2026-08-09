@@ -1,12 +1,13 @@
 package com.aivle.sellon.domain.mypage.dto.request;
 
+import com.aivle.sellon.domain.mypage.enums.RecipientDepartment;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotNull;
 
 public record RecipientRequest(
         Long recipientId,
-        @NotBlank @Size(max = 50) String department,
+        @NotNull RecipientDepartment department,
         @NotBlank @Email String email
 ) {
 }
