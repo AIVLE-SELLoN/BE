@@ -3,6 +3,7 @@ package com.aivle.sellon.domain.report.repository;
 import com.aivle.sellon.domain.report.entity.QReport;
 import com.aivle.sellon.domain.report.entity.Report;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
@@ -33,6 +34,17 @@ public class ReportRepositoryImpl implements ReportRepositoryCustom {
                                 report.company.id.eq(companyId),
                                 report.reportId.eq(reportId)
                         )
+                        .fetchOne()
+        );
+    }
+
+    @Override
+    public Optional<Report> findByIdForUpdate(Long id) {
+        return Optional.ofNullable(
+                queryFactory
+                        .selectFrom(report)
+                        .where(report.id.eq(id))
+                        .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                         .fetchOne()
         );
     }

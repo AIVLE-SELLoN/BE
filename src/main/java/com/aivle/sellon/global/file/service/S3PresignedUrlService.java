@@ -13,7 +13,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class S3PresignedUrlService {
 
-    private final S3Presigner s3Presigner;
+    private final S3Presigner reportS3Presigner;
 
     @Value("${cloud.aws.s3.report.bucket}")
     private String bucket;
@@ -29,6 +29,6 @@ public class S3PresignedUrlService {
                 .getObjectRequest(getObjectRequest)
                 .build();
 
-        return s3Presigner.presignGetObject(presignRequest).url().toString();
+        return reportS3Presigner.presignGetObject(presignRequest).url().toString();
     }
 }

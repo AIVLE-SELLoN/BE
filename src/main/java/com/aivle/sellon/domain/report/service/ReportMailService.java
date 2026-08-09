@@ -1,79 +1,67 @@
 package com.aivle.sellon.domain.report.service;
 
 import com.aivle.sellon.domain.report.event.ReportGeneratedEvent;
-import com.aivle.sellon.domain.user.entity.User;
-import com.aivle.sellon.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-
-import java.util.Optional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReportMailService {
 
-    private final JavaMailSender mailSender;
-    private final UserRepository userRepository;
-    private final ReportDownloadUrlService reportDownloadUrlService;
+    private static final int MAX_ATTEMPTS = 3;
 
-    @Value("${spring.mail.from}")
-    private String fromAddress;
+    private static final long RETRY_DELAY_MS = 1_000L;
+
+    private final ReportMailDeliveryService deliveryService;
 
     /**
-     * 커밋 이후에 발송한다. 트랜잭션 안에서 보내면 메일 실패가 리포트 저장까지 롤백시키고,
-     * 재전달된 메시지가 메일을 중복 발송하게 된다.
+     * 커밋 이후에 예약을 만든다. 트랜잭션 안에서 처리하면 예약 실패가 리포트 저장까지 롤백시킨다.
+     * <p>
+     * 예외는 여기서 반드시 끊는다 — AFTER_COMMIT 콜백의 예외는 커밋 호출자(MQ 리스너)로 전파돼
+     * 이미 저장이 확정된 메시지를 재시도하게 만든다. 다만 그냥 끊어버리면 메시지는 ack된 채
+     * 예약 행이 하나도 남지 않아 메일이 조용히 유실되므로, 끊기 전에 몇 번 다시 시도한다.
+     * 예약 생성은 멱등이라 재시도해도 중복 발송되지 않는다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onReportGenerated(ReportGeneratedEvent event) {
-        String downloadUrl = reportDownloadUrlService.generate(event.pdfS3Meta());
-        if (downloadUrl == null) {
-            log.warn("월간 보고서 메일 발송 생략 - 다운로드 가능한 PDF 없음. companyId={}, reportMonth={}",
-                    event.companyId(), event.reportMonth());
-            return;
-        }
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            try {
+                deliveryService.scheduleFor(event.reportId(), event.companyId());
+                return;
+            } catch (DataIntegrityViolationException e) {
+                // (report_id, email) 유니크 제약 위반 = 다른 컨슈머가 먼저 넣었다는 뜻.
+                // 예약은 이미 존재하므로 재시도할 것도, 알릴 것도 없다.
+                log.info("월간 보고서 메일 예약 생략 - 다른 처리에서 먼저 생성됨. reportId={}", event.reportId());
+                return;
+            } catch (Exception e) {
+                if (attempt == MAX_ATTEMPTS) {
+                    log.error("월간 보고서 메일 예약 실패 - {}회 시도 후 포기. reportId={}, companyId={}",
+                            MAX_ATTEMPTS, event.reportId(), event.companyId(), e);
+                    return;
+                }
 
-        Optional<User> recipient = userRepository.findRootByCompanyIdAndDeletedAtIsNull(event.companyId());
-        if (recipient.isEmpty()) {
-            log.warn("월간 보고서 메일 발송 실패 - 루트 계정 없음. companyId={}", event.companyId());
-            return;
-        }
+                log.warn("월간 보고서 메일 예약 실패 - 재시도 {}/{}. reportId={}",
+                        attempt, MAX_ATTEMPTS, event.reportId(), e);
 
-        send(recipient.get().getEmail(), event, downloadUrl);
+                if (!sleepBeforeRetry())
+                    return;
+            }
+        }
     }
 
-    private void send(String email, ReportGeneratedEvent event, String downloadUrl) {
+    /** @return 재시도를 이어가도 되면 true. 스레드가 인터럽트되면 중단한다 */
+    private boolean sleepBeforeRetry() {
         try {
-            mailSender.send(buildMessage(email, event, downloadUrl));
-        } catch (MailException e) {
-            // 메일 실패로 메시지를 재처리하면 리포트가 다시 저장되고 메일도 중복 발송된다
-            log.error("월간 보고서 메일 발송 실패. companyId={}, reportMonth={}",
-                    event.companyId(), event.reportMonth(), e);
+            Thread.sleep(RETRY_DELAY_MS);
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
         }
-    }
-
-    private SimpleMailMessage buildMessage(String email, ReportGeneratedEvent event, String downloadUrl) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(email);
-        message.setSubject("[SELLoN] %s 월간 보고서가 준비되었습니다".formatted(event.reportMonth()));
-        message.setText(buildBody(event, downloadUrl));
-        return message;
-    }
-
-    private String buildBody(ReportGeneratedEvent event, String downloadUrl) {
-        return """
-                %s 월간 보고서 작성이 완료되었습니다.
-                아래 링크에서 파일을 다운로드해주세요.
-
-                %s
-                %s""".formatted(event.reportMonth(), event.pdfS3Meta().getOriginalFileName(), downloadUrl);
     }
 }

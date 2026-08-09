@@ -52,15 +52,16 @@ aws:
 report:
   download-url:
     expire: 604800000 # 7일 (ms)
+  mail:
+    # 예약 시각이 도래한 완료 메일을 훑는 주기. sendTime이 분 단위라 10분이면 충분하고,
+    # 재시도 간격 자체는 이 주기가 아니라 예약 시각(실패 시 다음 날)이 결정한다
+    scheduler-cron: "0 */10 * * * *"
 cloud:
   aws:
     region: ap-northeast-2
     credentials:
       access-key: ${AWS_ACCESS_KEY}
       secret-key: ${AWS_SECRET_KEY}
-    s3:
-      bucket:
-        image: ${AWS_S3_IMAGE_BUCKET}
     opensearch:
       host: ${AWS_OPENSEARCH_HOST}
       region: ${AWS_OPENSEARCH_REGION:ap-northeast-2}
