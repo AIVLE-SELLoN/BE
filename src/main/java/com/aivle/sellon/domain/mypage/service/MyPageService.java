@@ -84,10 +84,10 @@ public class MyPageService {
     private final CompanyKeyMasker companyKeyMasker;
     private final EmailVerificationService emailVerificationService;
     private final GlobalFileValidator globalFileValidator;
-    private final S3Client s3Client;
-    private final S3Presigner s3Presigner;
+    private final S3Client imageS3Client;
+    private final S3Presigner imageS3Presigner;
 
-    @Value("${cloud.aws.s3.bucket.image}")
+    @Value("${cloud.aws.s3.image.bucket}")
     private String bucket;
 
     @Transactional
@@ -302,7 +302,7 @@ public class MyPageService {
                 .putObjectRequest(objectRequest)
                 .build();
 
-        String presignedUrl = s3Presigner.presignPutObject(presignRequest).url().toString();
+        String presignedUrl = imageS3Presigner.presignPutObject(presignRequest).url().toString();
 
         return ProfileImagePresignedUrlResponse.of(
                 presignedUrl,
@@ -322,7 +322,7 @@ public class MyPageService {
 
         HeadObjectResponse headObjectResponse;
         try {
-            headObjectResponse = s3Client.headObject(HeadObjectRequest.builder()
+            headObjectResponse = imageS3Client.headObject(HeadObjectRequest.builder()
                     .bucket(bucket)
                     .key(request.objectKey())
                     .build());
@@ -331,13 +331,13 @@ public class MyPageService {
         }
 
         if (headObjectResponse.contentLength() > FileDirectory.PROFILE.getFileSize()) {
-            s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(request.objectKey()).build());
+            imageS3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(request.objectKey()).build());
             throw new FileSizeExceededException();
         }
 
         String previousKey = user.getProfileImageKey();
         if (previousKey != null && !previousKey.equals(request.objectKey())) {
-            s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(previousKey).build());
+            imageS3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(previousKey).build());
         }
 
         user.changeProfileImage(request.objectKey());
@@ -355,7 +355,7 @@ public class MyPageService {
         String profileImageKey = user.getProfileImageKey();
         if (profileImageKey != null) {
             try {
-                s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(profileImageKey).build());
+                imageS3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(profileImageKey).build());
             } catch (S3Exception e) {
                 log.warn("프로필 이미지 S3 객체 삭제 실패. key={}", profileImageKey, e);
             }
@@ -407,7 +407,7 @@ public class MyPageService {
                 .getObjectRequest(objectRequest)
                 .build();
 
-        return s3Presigner.presignGetObject(presignRequest).url().toString();
+        return imageS3Presigner.presignGetObject(presignRequest).url().toString();
     }
 
     private String resolveImageContentType(String profileImageKey) {

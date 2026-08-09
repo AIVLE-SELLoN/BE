@@ -62,9 +62,6 @@ cloud:
     credentials:
       access-key: ${AWS_ACCESS_KEY}
       secret-key: ${AWS_SECRET_KEY}
-    s3:
-      bucket:
-        image: ${AWS_S3_IMAGE_BUCKET}
     opensearch:
       host: ${AWS_OPENSEARCH_HOST}
       region: ${AWS_OPENSEARCH_REGION:ap-northeast-2}
