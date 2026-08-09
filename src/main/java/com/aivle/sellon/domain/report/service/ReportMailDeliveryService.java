@@ -48,6 +48,12 @@ public class ReportMailDeliveryService {
      * EntityManager가 아직 스레드에 바인딩돼 있다(정리는 afterCompletion에서 일어난다).
      * 기본값인 REQUIRED로 두면 Spring이 "트랜잭션이 있다"고 판단해 이미 끝난 트랜잭션에 조인하고,
      * 저장이 커밋되지 않은 채 예외도 없이 사라진다.
+     *
+     * 리포트 행을 락으로 잡는 이유: 쿠버네티스 환경에서는 같은 report_id에 대한 메시지(원본+재전달)가
+     * 서로 다른 인스턴스에서 동시에 처리될 수 있다. 락 없이 기존 수신자를 조회하면 두 트랜잭션이
+     * 같은 스냅샷을 보고 각자 INSERT를 시도하다 유니크 제약(report_id, email) 충돌이 나고,
+     * 그 배치 안에 함께 있던 진짜 신규 수신자까지 롤백으로 유실된다. 락을 걸면 뒤에 온 트랜잭션은
+     * 앞선 트랜잭션이 커밋할 때까지 대기했다가 최신 상태를 다시 읽으므로 이 경합이 사라진다.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void scheduleFor(Long reportId, Long companyId) {
@@ -57,7 +63,7 @@ public class ReportMailDeliveryService {
             return;
         }
 
-        Report report = reportRepository.findById(reportId).orElse(null);
+        Report report = reportRepository.findByIdForUpdate(reportId).orElse(null);
         if (report == null) {
             log.warn("월간 보고서 메일 예약 실패 - 리포트 없음. reportId={}", reportId);
             return;
