@@ -3,12 +3,11 @@ package com.aivle.sellon.domain.report.mq;
 import com.aivle.sellon.domain.company.exception.CompanyNotFoundException;
 import com.aivle.sellon.domain.report.dto.message.MonthlyReportPayload;
 import com.aivle.sellon.domain.report.service.ReportService;
-import com.aivle.sellon.global.mq.config.RabbitMQConfig;
 import com.aivle.sellon.global.mq.enums.EventFailureReason;
+import com.aivle.sellon.global.mq.listener.MqEventHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -17,28 +16,22 @@ import tools.jackson.databind.json.JsonMapper;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class MonthlyReportListener {
+public class MonthlyReportEventHandler implements MqEventHandler {
 
     private static final String REPORT_GENERATED_EVENT_TYPE = "ai.report.generated";
 
     private final ReportService reportService;
     private final JsonMapper jsonMapper;
 
-    @RabbitListener(queues = RabbitMQConfig.MAIN_INBOUND_QUEUE)
-    public void onAiEvent(JsonNode envelope) {
-        String eventType = envelope.path("eventType").asString(null);
-        String eventId = envelope.path("eventId").asString(null);
-        String traceId = envelope.path("traceId").asString(null);
+    @Override
+    public boolean supports(String eventType) {
+        return REPORT_GENERATED_EVENT_TYPE.equals(eventType);
+    }
+
+    @Override
+    public void handle(JsonNode envelope, String eventId, String traceId) {
         // company_id는 payload 스키마에 없다. envelope 최상위에 camelCase로 실려 온다.
         String companyKey = envelope.path("companyId").asString(null);
-
-        // main.inbound는 ai.# 전체를 받는데 현재 컨슈머는 이것 하나뿐이라, 처리하지 않는 이벤트는
-        // ack 후 사라진다. 나중에 컨슈머가 추가되기 전까지 무엇이 유실되는지 남겨둔다.
-        if (!REPORT_GENERATED_EVENT_TYPE.equals(eventType)) {
-            log.warn("처리 대상이 아닌 이벤트 폐기 - eventType={}, eventId={}, traceId={}",
-                    eventType, eventId, traceId);
-            return;
-        }
 
         // 파싱과 저장을 한 try에 두면 서비스 내부에서 난 IllegalArgumentException이
         // MALFORMED_PAYLOAD로 오분류돼 재시도 없이 DLQ로 직행한다. 범위를 나눠 둔다.
