@@ -35,7 +35,7 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_detection_alert_company_status", columnList = "company_id, alert_status"),
                 @Index(name = "idx_detection_alert_detected_at", columnList = "detected_at"),
                 @Index(name = "idx_detection_alert_group_channel_aspect",
-                        columnList = "product_group_code, channel, main_aspect")
+                        columnList = "product_group_id, channel, main_aspect")
         }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -60,7 +60,7 @@ public class DetectionAlert extends BaseEntity {
 
     // raw DB의 논리 식별자를 그대로 보존해야 하므로 JPA 외래키로 강제하지 않는다.
     @Column(nullable = false, length = 32)
-    private String productGroupCode;
+    private String productGroupId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -119,9 +119,6 @@ public class DetectionAlert extends BaseEntity {
     @Column(nullable = false)
     private AlertStatus alertStatus;
 
-    @Column(length = 10)
-    private String priority;
-
     @Column(columnDefinition = "TEXT")
     private String channelBreakdownSnapshot;
 
@@ -132,32 +129,32 @@ public class DetectionAlert extends BaseEntity {
     }
 
     public static DetectionAlert create(String alertCode, LocalDateTime detectedAt, String updatesAlertCode,
-                                        Company company, String productGroupCode, AlertChannel channel,
+                                        Company company, String productGroupId, AlertChannel channel,
                                         LocalDate windowStart, LocalDate windowEnd, Verdict verdict,
                                         String significantChannels, String excludedChannels, Aspect mainAspect,
                                         String subAspects, AlertStats stats, String sourceSignals,
                                         AlertRootCause rootCause, DetectionConfidence detectionConfidence,
                                         boolean scopeIn, RecommendedAction recommendedAction,
-                                        String evidenceInquiryIds, String linkedChangeId, String priority,
+                                        String evidenceInquiryIds, String linkedChangeId,
                                         String channelBreakdownSnapshot) {
         DetectionAlert detectionAlert = new DetectionAlert(alertCode, company);
-        detectionAlert.update(detectedAt, updatesAlertCode, productGroupCode, channel, windowStart, windowEnd,
+        detectionAlert.update(detectedAt, updatesAlertCode, productGroupId, channel, windowStart, windowEnd,
                 verdict, significantChannels, excludedChannels, mainAspect, subAspects, stats, sourceSignals,
                 rootCause, detectionConfidence, scopeIn, recommendedAction, evidenceInquiryIds, linkedChangeId,
-                priority, channelBreakdownSnapshot);
+                channelBreakdownSnapshot);
         return detectionAlert;
     }
 
-    public void update(LocalDateTime detectedAt, String updatesAlertCode, String productGroupCode,
+    public void update(LocalDateTime detectedAt, String updatesAlertCode, String productGroupId,
                        AlertChannel channel, LocalDate windowStart, LocalDate windowEnd, Verdict verdict,
                        String significantChannels, String excludedChannels, Aspect mainAspect, String subAspects,
                        AlertStats stats, String sourceSignals, AlertRootCause rootCause,
                        DetectionConfidence detectionConfidence, boolean scopeIn, RecommendedAction recommendedAction,
-                       String evidenceInquiryIds, String linkedChangeId, String priority,
+                       String evidenceInquiryIds, String linkedChangeId,
                        String channelBreakdownSnapshot) {
         this.detectedAt = detectedAt;
         this.updatesAlertCode = updatesAlertCode;
-        this.productGroupCode = productGroupCode;
+        this.productGroupId = productGroupId;
         this.channel = channel;
         this.windowStart = windowStart;
         this.windowEnd = windowEnd;
@@ -174,7 +171,6 @@ public class DetectionAlert extends BaseEntity {
         this.recommendedAction = recommendedAction;
         this.evidenceInquiryIds = evidenceInquiryIds;
         this.linkedChangeId = linkedChangeId;
-        this.priority = priority;
         this.channelBreakdownSnapshot = channelBreakdownSnapshot;
     }
 }
