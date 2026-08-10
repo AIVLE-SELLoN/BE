@@ -2,6 +2,7 @@ package com.aivle.sellon.domain.alert.service;
 
 import com.aivle.sellon.domain.alert.dto.response.AlertDetailResponse;
 import com.aivle.sellon.domain.alert.dto.response.AlertListResponse;
+import com.aivle.sellon.domain.alert.dto.response.AlertReadResponse;
 import com.aivle.sellon.domain.alert.dto.response.AlertSummaryResponse;
 import com.aivle.sellon.domain.alert.entity.DetectionAlert;
 import com.aivle.sellon.domain.alert.exception.AlertNotFoundException;
@@ -15,6 +16,7 @@ import com.aivle.sellon.global.security.principal.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -30,6 +32,7 @@ public class AlertService {
     private final CursorUtils cursorUtils;
     private final JsonMapper jsonMapper;
 
+    @Transactional(readOnly = true)
     public AlertListResponse getAlerts(UserPrincipal principal, String cursor, int size, boolean unreadOnly) {
         Long cursorId = cursor != null ? cursorUtils.toId(cursor) : null;
         List<Notification> notifications = notificationRepository.findAllByCompanyId(
@@ -51,6 +54,7 @@ public class AlertService {
         );
     }
 
+    @Transactional(readOnly = true)
     public AlertDetailResponse getAlert(UserPrincipal principal, Long notificationId) {
         Notification notification = notificationRepository.findByIdAndCompanyId(notificationId, principal.getCompanyId())
                 .orElseThrow(AlertNotFoundException::new);
@@ -58,6 +62,20 @@ public class AlertService {
         AlertDetailResponse.AlertResponse alert = findAlertResponse(notification);
 
         return AlertDetailResponse.of(notification, alert);
+    }
+
+    @Transactional
+    public AlertReadResponse markAsRead(UserPrincipal principal, Long notificationId) {
+        Notification notification = notificationRepository.findByIdAndCompanyId(notificationId, principal.getCompanyId())
+                .orElseThrow(AlertNotFoundException::new);
+
+        notification.markAsRead();
+        notificationRepository.flush();
+
+        return AlertReadResponse.of(
+                notification,
+                notificationRepository.countUnreadByCompanyId(principal.getCompanyId())
+        );
     }
 
     private AlertDetailResponse.AlertResponse findAlertResponse(Notification notification) {

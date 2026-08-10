@@ -2,6 +2,7 @@ package com.aivle.sellon.domain.alert.controller;
 
 import com.aivle.sellon.domain.alert.dto.response.AlertListResponse;
 import com.aivle.sellon.domain.alert.dto.response.AlertDetailResponse;
+import com.aivle.sellon.domain.alert.dto.response.AlertReadResponse;
 import com.aivle.sellon.domain.alert.service.AlertService;
 import com.aivle.sellon.global.common.ApiResponse;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
@@ -40,5 +41,13 @@ public class AlertController {
             @PathVariable Long notificationId
     ) {
         return ApiResponse.ok(alertService.getAlert(principal, notificationId));
+    }
+
+    @GetMapping("/{notificationId}/read")
+    public ResponseEntity<ApiResponse<AlertReadResponse>> markAsRead(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long notificationId
+    ) {
+        return ApiResponse.ok(alertService.markAsRead(principal, notificationId));
     }
 }
