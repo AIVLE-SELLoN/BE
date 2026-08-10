@@ -1,4 +1,4 @@
-package com.aivle.sellon.domain.inquiries.dto;
+package com.aivle.sellon.domain.inquiries.dto.request;
 
 import com.aivle.sellon.domain.inquiries.enums.InquireType;
 

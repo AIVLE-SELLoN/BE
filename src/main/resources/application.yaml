@@ -53,3 +53,19 @@ spring:
       expire: 300000
     token:
       expire: 1800000
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+file:
+  storage-type: local   # local | s3 (S3 전환 시 s3로 변경, 관련 설정 추가 필요)
+  upload-dir: ./uploads
+  # s3:
+  #   bucket: {버킷명}
+  #   presigned-url-expire-minutes: 10
+
+sellon:
+  admin:
+    register-key: ${ADMIN_REGISTER_KEY}

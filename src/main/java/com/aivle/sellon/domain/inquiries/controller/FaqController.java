@@ -1,6 +1,6 @@
 package com.aivle.sellon.domain.inquiries.controller;
 
-import com.aivle.sellon.domain.inquiries.dto.FaqResponse;
+import com.aivle.sellon.domain.inquiries.dto.response.FaqResponse;
 import com.aivle.sellon.domain.inquiries.service.FaqService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,8 +1,13 @@
 package com.aivle.sellon.domain.inquiries.controller;
 
-import com.aivle.sellon.domain.inquiries.dto.*;
+import com.aivle.sellon.domain.inquiries.dto.request.CsAnswerRequest;
+import com.aivle.sellon.domain.inquiries.dto.request.CsInquiryRequest;
+import com.aivle.sellon.domain.inquiries.dto.request.CsInquiryUpdateRequest;
+import com.aivle.sellon.domain.inquiries.dto.response.CsInquiryResponse;
 import com.aivle.sellon.domain.inquiries.enums.InquiryStatus;
 import com.aivle.sellon.domain.inquiries.service.CsInquiryService;
+import com.aivle.sellon.domain.user.enums.Role;
+import com.aivle.sellon.domain.user.exception.AdminAccessRequiredException;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -35,23 +40,53 @@ public class CsInquiryController {
 
     @GetMapping("/admin")
     public ResponseEntity<List<CsInquiryResponse>> getAllInquiries(
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false)InquiryStatus status
     ) {
-        // TODO: 운영자 권한 체크 필요
+        requireAdmin(principal);
         return ResponseEntity.ok(csInquiryService.getAllInquiries(status));
     }
 
     @GetMapping("/{inquireKey}")
-    public ResponseEntity<CsInquiryResponse> getDetail(@PathVariable Long inquireKey) {
-        return ResponseEntity.ok(csInquiryService.getInquiryDetail(inquireKey));
-    } // TODO: 본인 문의이거나 운영자인 경우만 허용하는 조건 추가(문의 내용 상세)
+    public ResponseEntity<CsInquiryResponse> getDetail(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long inquireKey
+    ) {
+        return ResponseEntity.ok(csInquiryService.getInquiryDetail(principal, inquireKey));
+    }
+
+    private void requireAdmin(UserPrincipal principal) {
+        if (principal.getRole() != Role.ADMIN)
+            throw new AdminAccessRequiredException();
+    }
+
+    @PatchMapping("/{inquireKey}")
+    public ResponseEntity<CsInquiryResponse> update(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long inquireKey,
+            @RequestBody CsInquiryUpdateRequest request
+    ) {
+        CsInquiryResponse response = csInquiryService.updateInquiry(principal, inquireKey, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{inquireKey}")
+    public ResponseEntity<Void> delete(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long inquireKey
+    ) {
+        csInquiryService.deleteInquiry(principal, inquireKey);
+        return ResponseEntity.noContent().build();
+    }
 
     @PostMapping("/{inquireKey}/answer")
     public ResponseEntity<CsInquiryResponse> answer(
+        @AuthenticationPrincipal UserPrincipal principal,
         @PathVariable Long inquireKey,
         @RequestBody CsAnswerRequest request
     ) {
+        requireAdmin(principal);
         CsInquiryResponse response = csInquiryService.answerInquiry(inquireKey, request);
         return ResponseEntity.ok(response);
-    } // TODO: 운영자인 경우만 허용하는 조건 추가 (답변 로직)
+    }
 }

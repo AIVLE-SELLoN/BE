@@ -1,6 +1,5 @@
 package com.aivle.sellon.domain.inquiries.entity;
 
-import com.aivle.sellon.domain.inquiries.enums.InquireType;
 import com.aivle.sellon.global.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -26,8 +25,4 @@ public class Faq extends BaseEntity {
 
     @Column(name = "faq_answer")
     private String faqAnswer;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "faq_category")
-    private InquireType faqCategory;
 }

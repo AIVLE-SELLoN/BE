@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface CsInquiryRepository extends JpaRepository<CsInquiry, Long> {
-    List<CsInquiry> findByUser_Id(Long userId);
-    List<CsInquiry> findByInquiryStatus(InquiryStatus status);
+    List<CsInquiry> findByUser_IdAndDeletedAtIsNull(Long userId);
+    List<CsInquiry> findByInquiryStatusAndDeletedAtIsNull(InquiryStatus status);
+    List<CsInquiry> findByDeletedAtIsNull();
 }

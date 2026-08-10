@@ -1,6 +1,5 @@
 package com.aivle.sellon.domain.inquiries.entity;
 
-import com.aivle.sellon.domain.channels.entity.UsersChannel;
 import com.aivle.sellon.domain.inquiries.enums.InquireType;
 import com.aivle.sellon.domain.inquiries.enums.InquiryStatus;
 import com.aivle.sellon.domain.user.entity.User;
@@ -31,7 +30,7 @@ public class CsInquiry extends BaseEntity {
     @Column(name = "inquire_type", nullable = false)
     private InquireType inquireType;
 
-    @Column(name = "attachment_url") // 추가 : 파일 첨부
+    @Column(name = "attachment_url")
     private String attachmentUrl;
 
     @Column(name = "inquire_answer")
@@ -42,18 +41,13 @@ public class CsInquiry extends BaseEntity {
     private InquiryStatus inquiryStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "users_channel_key", nullable = false)
-    private UsersChannel usersChannel;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    public static CsInquiry of(User user, UsersChannel usersChannel, String inquireTitle,
+    public static CsInquiry of(User user, String inquireTitle,
                                String inquireContent, InquireType inquireType, String attachmentUrl) {
         CsInquiry entity = new CsInquiry();
         entity.user = user;
-        entity.usersChannel = usersChannel;
         entity.inquireTitle = inquireTitle;
         entity.inquireContent = inquireContent;
         entity.inquireType = inquireType;
@@ -64,10 +58,25 @@ public class CsInquiry extends BaseEntity {
 
     public void answer(String inquireAnswer) {
         this.inquireAnswer = inquireAnswer;
-        this.inquiryStatus = InquiryStatus.DISCUSSING;
+        this.inquiryStatus = InquiryStatus.CLEARED;
     }
 
-//    public void clear() {
-//        this.inquiryStatus = InquiryStatus.CLEARED;
-//    }
+    public void update(String inquireTitle, String inquireContent, InquireType inquireType, String attachmentUrl) {
+        this.inquireTitle = inquireTitle;
+        this.inquireContent = inquireContent;
+        this.inquireType = inquireType;
+        this.attachmentUrl = attachmentUrl;
+    }
+
+    public void remove() {
+        delete();
+    }
+
+    public boolean isOwnedBy(Long userId) {
+        return this.user.getId().equals(userId);
+    }
+
+    public boolean isAnswered() {
+        return this.inquiryStatus != InquiryStatus.WAITING;
+    }
 }

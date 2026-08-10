@@ -1,6 +1,6 @@
 package com.aivle.sellon.domain.inquiries.service;
 
-import com.aivle.sellon.domain.inquiries.dto.FaqResponse;
+import com.aivle.sellon.domain.inquiries.dto.response.FaqResponse;
 import com.aivle.sellon.domain.inquiries.repository.FaqRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ public class FaqService {
     @Transactional(readOnly = true)
     public List<FaqResponse> getAllFaqs() {
         return faqRepository.findAll().stream()
-            .map(f -> new FaqResponse(f.getFaqKey(), f.getFaqTitle(), f.getFaqQuestion(), f.getFaqAnswer(), f.getFaqCategory()))
+            .map(f -> new FaqResponse(f.getFaqKey(), f.getFaqTitle(), f.getFaqQuestion(), f.getFaqAnswer()))
             .toList();
     }
 }

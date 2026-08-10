@@ -1,5 +1,6 @@
 package com.aivle.sellon.domain.auth.service;
 
+import com.aivle.sellon.domain.auth.dto.request.AdminSignupRequest;
 import com.aivle.sellon.domain.auth.dto.request.LoginRequest;
 import com.aivle.sellon.domain.auth.dto.request.MemberSignupRequest;
 import com.aivle.sellon.domain.auth.dto.request.ReissueRequest;
@@ -8,6 +9,7 @@ import com.aivle.sellon.domain.auth.dto.response.LoginResponse;
 import com.aivle.sellon.domain.auth.dto.response.LoginResult;
 import com.aivle.sellon.domain.auth.dto.response.SignupResponse;
 import com.aivle.sellon.domain.auth.dto.response.TokenResponse;
+import com.aivle.sellon.domain.auth.exception.InvalidAdminKeyException;
 import com.aivle.sellon.domain.auth.exception.InvalidCredentialsException;
 import com.aivle.sellon.domain.company.entity.Company;
 import com.aivle.sellon.domain.company.exception.InvalidCompanyKeyException;
@@ -27,6 +29,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -46,6 +49,31 @@ public class AuthService {
     private final RefreshTokenRedisService refreshTokenRedisService;
     private final TokenBlacklistRedisService tokenBlacklistRedisService;
     private final EmailVerificationService emailVerificationService;
+
+    private static final String ADMIN_COMPANY_NAME = "SELLON_INTERNAL";
+
+    @Value("${sellon.admin.register-key}")
+    private String adminRegisterKey;
+
+    @Transactional
+    public SignupResponse signupAdmin(AdminSignupRequest request) {
+        if (!adminRegisterKey.equals(request.adminKey()))
+            throw new InvalidAdminKeyException();
+
+        validateEmailNotDuplicated(request.email());
+
+        Company company = companyRepository.findByName(ADMIN_COMPANY_NAME)
+                .orElseGet(() -> companyRepository.save(Company.create(ADMIN_COMPANY_NAME)));
+
+        User user = userRepository.save(User.createAdmin(
+                request.email(),
+                passwordEncoder.encode(request.password()),
+                request.name(),
+                company
+        ));
+
+        return SignupResponse.of(user, company.getJoinKey());
+    }
 
     @Transactional
     public SignupResponse signupRoot(RootSignupRequest request) {
