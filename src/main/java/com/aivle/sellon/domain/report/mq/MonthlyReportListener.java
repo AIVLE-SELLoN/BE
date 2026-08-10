@@ -29,6 +29,8 @@ public class MonthlyReportListener {
         String eventType = envelope.path("eventType").asString(null);
         String eventId = envelope.path("eventId").asString(null);
         String traceId = envelope.path("traceId").asString(null);
+        // company_id는 payload 스키마에 없다. envelope 최상위에 camelCase로 실려 온다.
+        String companyKey = envelope.path("companyId").asString(null);
 
         // main.inbound는 ai.# 전체를 받는데 현재 컨슈머는 이것 하나뿐이라, 처리하지 않는 이벤트는
         // ack 후 사라진다. 나중에 컨슈머가 추가되기 전까지 무엇이 유실되는지 남겨둔다.
@@ -48,7 +50,7 @@ public class MonthlyReportListener {
         }
 
         try {
-            reportService.saveGeneratedReport(payload);
+            reportService.saveGeneratedReport(companyKey, payload);
         } catch (CompanyNotFoundException e) {
             throw deadLetter(EventFailureReason.UNKNOWN_COMPANY, eventId, traceId, e);
         }
