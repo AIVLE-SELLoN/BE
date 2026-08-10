@@ -1,0 +1,54 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SMTP_USER}
+    password: ${SMTP_PASSWORD}
+    from: sellon_info@sellon.site
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    listener:
+      simple:
+        prefetch: 20
+
+cloud:
+  aws:
+    region: ap-northeast-2
+    s3:
+      report:
+        bucket: ${AWS_S3_REPORT_BUCKET}
+        access-key: ${AWS_S3_REPORT_ACCESS_KEY}
+        secret-key: ${AWS_S3_REPORT_SECRET_KEY}
+      image:
+        bucket: ${AWS_S3_IMAGE_BUCKET}
+        access-key: ${AWS_S3_IMAGE_ACCESS_KEY}
+        secret-key: ${AWS_S3_IMAGE_SECRET_KEY}
+
+# TODO: 실제 prod raw-db 접속 정보로 확정 필요 (env var 이름은 가정)
+raw-db:
+  datasource:
+    url: ${RAW_DB_URL}
+    driver-class-name: org.postgresql.Driver
+    username: ${RAW_DB_USERNAME}
+    password: ${RAW_DB_PASSWORD}

@@ -13,9 +13,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EntityScan(basePackages = "com.aivle.sellon.domain")
 @EnableJpaRepositories(basePackages = "com.aivle.sellon.domain")
 public class SellonApplication {
-
 	public static void main(String[] args) {
 		SpringApplication.run(SellonApplication.class, args);
 	}
-
 }

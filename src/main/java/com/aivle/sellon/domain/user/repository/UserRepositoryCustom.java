@@ -10,4 +10,6 @@ public interface UserRepositoryCustom {
     boolean existsByEmailAndDeletedAtIsNull(String email);
 
     Optional<User> findByIdAndDeletedAtIsNull(Long id);
+
+    Optional<User> findRootByCompanyIdAndDeletedAtIsNull(Long companyId);
 }
