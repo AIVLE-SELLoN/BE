@@ -1,4 +1,4 @@
-package com.aivle.sellon.domain.report.entity;
+package com.aivle.sellon.domain.guideline.entity;
 
 import static com.querydsl.core.types.PathMetadataFactory.*;
 
@@ -15,9 +15,13 @@ import com.querydsl.core.types.Path;
 @Generated("com.querydsl.codegen.DefaultEmbeddableSerializer")
 public class QPdfS3Meta extends BeanPath<PdfS3Meta> {
 
-    private static final long serialVersionUID = 1060338757L;
+    private static final long serialVersionUID = 1168393451L;
 
     public static final QPdfS3Meta pdfS3Meta = new QPdfS3Meta("pdfS3Meta");
+
+    public final StringPath companyId = createString("companyId");
+
+    public final StringPath companyName = createString("companyName");
 
     public final DateTimePath<java.time.LocalDateTime> createdAt = createDateTime("createdAt", java.time.LocalDateTime.class);
 

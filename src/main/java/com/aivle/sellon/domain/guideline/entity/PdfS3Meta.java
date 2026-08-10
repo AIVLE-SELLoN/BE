@@ -1,4 +1,4 @@
-package com.aivle.sellon.domain.report.entity;
+package com.aivle.sellon.domain.guideline.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
@@ -12,6 +12,13 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PdfS3Meta {
+
+    // Guideline의 company FK(company_id)와 컬럼명이 겹쳐서 명시적으로 구분한다
+    @Column(name = "pdf_company_id")
+    private String companyId;
+
+    @Column(name = "pdf_company_name")
+    private String companyName;
 
     private String s3BucketName;
     private String s3FilePath;
@@ -30,9 +37,12 @@ public class PdfS3Meta {
     private LocalDateTime presignedExpiresAt;
     private LocalDateTime objectExpiresAt;
 
-    private PdfS3Meta(String s3BucketName, String s3FilePath, String originalFileName, String newFileName,
-                       String s3FullKey, Long fileSizeBytes, String presignedUrl,
-                       LocalDateTime createdAt, LocalDateTime presignedExpiresAt, LocalDateTime objectExpiresAt) {
+    private PdfS3Meta(String companyId, String companyName, String s3BucketName, String s3FilePath,
+                       String originalFileName, String newFileName, String s3FullKey, Long fileSizeBytes,
+                       String presignedUrl, LocalDateTime createdAt, LocalDateTime presignedExpiresAt,
+                       LocalDateTime objectExpiresAt) {
+        this.companyId = companyId;
+        this.companyName = companyName;
         this.s3BucketName = s3BucketName;
         this.s3FilePath = s3FilePath;
         this.originalFileName = originalFileName;
@@ -45,11 +55,11 @@ public class PdfS3Meta {
         this.objectExpiresAt = objectExpiresAt;
     }
 
-    public static PdfS3Meta of(String s3BucketName, String s3FilePath, String originalFileName, String newFileName,
-                                String s3FullKey, Long fileSizeBytes, String presignedUrl,
-                                LocalDateTime createdAt, LocalDateTime presignedExpiresAt,
+    public static PdfS3Meta of(String companyId, String companyName, String s3BucketName, String s3FilePath,
+                                String originalFileName, String newFileName, String s3FullKey, Long fileSizeBytes,
+                                String presignedUrl, LocalDateTime createdAt, LocalDateTime presignedExpiresAt,
                                 LocalDateTime objectExpiresAt) {
-        return new PdfS3Meta(s3BucketName, s3FilePath, originalFileName, newFileName, s3FullKey,
-                fileSizeBytes, presignedUrl, createdAt, presignedExpiresAt, objectExpiresAt);
+        return new PdfS3Meta(companyId, companyName, s3BucketName, s3FilePath, originalFileName, newFileName,
+                s3FullKey, fileSizeBytes, presignedUrl, createdAt, presignedExpiresAt, objectExpiresAt);
     }
 }

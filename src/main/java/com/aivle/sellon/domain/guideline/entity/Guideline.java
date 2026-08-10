@@ -1,8 +1,8 @@
-package com.aivle.sellon.domain.report.entity;
+package com.aivle.sellon.domain.guideline.entity;
 
 import com.aivle.sellon.domain.company.entity.Company;
-import com.aivle.sellon.domain.report.dto.message.MonthlyReportPayload;
-import com.aivle.sellon.domain.report.dto.message.PdfS3MetaPayload;
+import com.aivle.sellon.domain.guideline.dto.message.GuidelinePayload;
+import com.aivle.sellon.domain.guideline.dto.message.PdfS3MetaPayload;
 import com.aivle.sellon.domain.report.enums.ReportStatus;
 import com.aivle.sellon.global.BaseEntity;
 import jakarta.persistence.Column;
@@ -21,6 +21,8 @@ import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -29,11 +31,11 @@ import java.time.ZoneId;
 @Entity
 @Getter
 @Table(uniqueConstraints = @UniqueConstraint(
-        name = "uk_report_company_report_id",
-        columnNames = {"company_id", "report_id"}
+        name = "uk_guideline_company_guideline_id",
+        columnNames = {"company_id", "guideline_id"}
 ))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Report extends BaseEntity {
+public class Guideline extends BaseEntity {
 
     // 큐로 오는 S3 메타 시각은 Instant(UTC)라, BaseEntity 감사 컬럼과 같은 KST 벽시계로 맞춰 저장한다
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
@@ -46,12 +48,12 @@ public class Report extends BaseEntity {
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
-    // 월 1건 합본이라 reportId 형식은 RPT-{YYYYMM}. 회사 구분자가 없어 단독으로는 유일하지 않다
+    // alert_id의 ALT- 접두어를 GD-로 바꾼 값. 알림과 1:1이라 재생성해도 같은 ID (노션 §4.6, 2026-08-10)
     @Column(nullable = false)
-    private String reportId;
+    private String guidelineId;
 
     @Column(nullable = false)
-    private String reportMonth;
+    private String alertId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -63,29 +65,34 @@ public class Report extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String validationReport;
 
+    // 입력+출력 JSON 원본. PDF가 7일 뒤 사라진 다음에도 이 원본으로 재컴파일한다
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    private String sourcePayload;
+
     @Embedded
     private PdfS3Meta pdfS3Meta;
 
-    private Report(Company company, String reportId, String reportMonth) {
+    private Guideline(Company company, String guidelineId, String alertId) {
         this.company = company;
-        this.reportId = reportId;
-        this.reportMonth = reportMonth;
+        this.guidelineId = guidelineId;
+        this.alertId = alertId;
     }
 
-    public static Report create(MonthlyReportPayload payload, Company company) {
-        Report report = new Report(company, payload.reportId(), payload.reportMonth());
-        report.update(payload);
-        return report;
+    public static Guideline create(GuidelinePayload payload, Company company) {
+        Guideline guideline = new Guideline(company, payload.guidelineId(), payload.alertId());
+        guideline.update(payload);
+        return guideline;
     }
 
-    public void update(MonthlyReportPayload payload) {
+    public void update(GuidelinePayload payload) {
         this.status = payload.status();
         this.noticeMessage = payload.noticeMessage();
         this.validationReport = payload.validationReport() != null ? payload.validationReport().toString() : null;
+        this.sourcePayload = payload.sourcePayload().toString();
 
-        // FAILED_* 페이로드는 pdf_s3_meta가 비어 있다.
-        // 그대로 대입하면 앞서 SUCCESS로 만들어둔 PDF 참조가 지워지는데, S3의 파일은 그대로 살아있고 발송을 기다리던 메일 예약도 그 PDF를 가리키고 있다.
-        // 실제로 새 PDF가 왔을 때만 교체한다.
+        // FAILED_* 페이로드는 pdf_s3_meta가 비어 있다. 재전달로 다시 update가 불려도
+        // 이미 저장된 SUCCESS의 PDF 참조를 지우지 않도록, 새 값이 있을 때만 교체한다.
         PdfS3Meta incoming = toPdfS3Meta(payload.pdfS3Meta());
         if (incoming != null)
             this.pdfS3Meta = incoming;
@@ -96,6 +103,8 @@ public class Report extends BaseEntity {
             return null;
 
         return PdfS3Meta.of(
+                payload.companyId(),
+                payload.companyName(),
                 payload.s3BucketName(),
                 payload.s3FilePath(),
                 payload.originalFileName(),
