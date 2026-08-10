@@ -1,16 +1,24 @@
 package com.aivle.sellon.domain.mypage.controller;
 
+import com.aivle.sellon.domain.mypage.dto.request.MyPageUpdateRequest;
+import com.aivle.sellon.domain.mypage.dto.request.ProfileImageCompleteRequest;
+import com.aivle.sellon.domain.mypage.dto.request.ProfileImagePresignedUrlRequest;
 import com.aivle.sellon.domain.mypage.dto.response.CompanyKeyResponse;
 import com.aivle.sellon.domain.mypage.dto.response.MyPageResponse;
+import com.aivle.sellon.domain.mypage.dto.response.ProfileImagePresignedUrlResponse;
 import com.aivle.sellon.domain.mypage.service.MyPageService;
 import com.aivle.sellon.global.common.ApiResponse;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,6 +34,14 @@ public class MyPageController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         return ApiResponse.ok(myPageService.getMyPage(principal));
+    }
+
+    @PatchMapping
+    public ResponseEntity<ApiResponse<MyPageResponse>> updateMyPage(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody MyPageUpdateRequest request
+    ) {
+        return ApiResponse.ok(myPageService.updateMyPage(principal, request));
     }
 
     @PostMapping("/company-key")
@@ -46,5 +62,28 @@ public class MyPageController {
                 .header(HttpHeaders.PRAGMA, "no-cache")
                 .header(HttpHeaders.EXPIRES, "0")
                 .body(ApiResponse.<CompanyKeyResponse>builder().data(response).build());
+    }
+
+    @PostMapping("/profile-image/presigned-url")
+    public ResponseEntity<ApiResponse<ProfileImagePresignedUrlResponse>> issueProfileImagePresignedUrl(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ProfileImagePresignedUrlRequest request
+    ) {
+        return ApiResponse.ok(myPageService.issueProfileImagePresignedUrl(principal, request));
+    }
+
+    @PatchMapping("/profile-image")
+    public ResponseEntity<ApiResponse<MyPageResponse>> completeProfileImageUpload(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ProfileImageCompleteRequest request
+    ) {
+        return ApiResponse.ok(myPageService.completeProfileImageUpload(principal, request));
+    }
+
+    @DeleteMapping("/profile-image")
+    public ResponseEntity<ApiResponse<MyPageResponse>> removeProfileImage(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ApiResponse.ok(myPageService.removeProfileImage(principal));
     }
 }

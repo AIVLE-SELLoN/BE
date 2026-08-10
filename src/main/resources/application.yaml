@@ -52,11 +52,10 @@ file:
   # s3:
   #   bucket: {버킷명}
   #   presigned-url-expire-minutes: 10
-
 sellon:
   admin:
     register-key: ${ADMIN_REGISTER_KEY}
-
+    
 # OpenSearch는 로컬/배포 모두 환경변수로만 접속하는 구조라 프로필 공통으로 둔다
 aws:
   opensearch:

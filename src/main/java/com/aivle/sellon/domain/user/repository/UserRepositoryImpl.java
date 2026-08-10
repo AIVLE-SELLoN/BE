@@ -2,6 +2,7 @@ package com.aivle.sellon.domain.user.repository;
 
 import com.aivle.sellon.domain.user.entity.QUser;
 import com.aivle.sellon.domain.user.entity.User;
+import com.aivle.sellon.domain.user.enums.Role;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 
@@ -40,6 +41,20 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
                 queryFactory
                         .selectFrom(user)
                         .where(user.id.eq(id), user.deletedAt.isNull())
+                        .fetchOne()
+        );
+    }
+
+    @Override
+    public Optional<User> findRootByCompanyIdAndDeletedAtIsNull(Long companyId) {
+        return Optional.ofNullable(
+                queryFactory
+                        .selectFrom(user)
+                        .where(
+                                user.company.id.eq(companyId),
+                                user.role.eq(Role.ROOT),
+                                user.deletedAt.isNull()
+                        )
                         .fetchOne()
         );
     }
