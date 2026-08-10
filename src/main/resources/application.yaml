@@ -2,6 +2,9 @@ spring:
   application:
     name: sellon
 
+  profiles:
+    active: local
+
   jwt:
     secret: pT+HzrT8gQkRpGJzxrfEFiS2yZPLClVhRxn3GuRIq2U=
     tokens:
@@ -12,13 +15,6 @@ spring:
   cursor:
     secret: pL2URxS9qn80k2DLiSwZ4CplPqXOsLoAWFnVrf0YYlY=
 
-  datasource:
-    url: jdbc:postgresql://localhost:5432/sellon
-    driver-class-name: org.postgresql.Driver
-    username: postgres
-    password:
-
-
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
@@ -27,37 +23,16 @@ spring:
       hibernate:
         format_sql: true
 
-
-  data:
-    redis:
-      # 로컬 개발: localhost의 redis 컨테이너 / 배포: ElastiCache Primary Endpoint(Cluster Mode Disabled)
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${SMTP_USER}
-    password: ${SMTP_PASSWORD}
-    from: sellon_info@sellon.site
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-        debug: true
-
   verification:
     code:
       expire: 300000
     token:
       expire: 1800000
 
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+servlet:
+  multipart:
+    max-file-size: 10MB
+    max-request-size: 10MB
 
 file:
   storage-type: local   # local | s3 (S3 전환 시 s3로 변경, 관련 설정 추가 필요)
@@ -69,3 +44,48 @@ file:
 sellon:
   admin:
     register-key: ${ADMIN_REGISTER_KEY}
+# 리스너 재시도 정책 (환경 무관 공통). 기본 컨테이너 팩토리에 적용되므로
+# containerFactory를 따로 지정하지 않은 모든 @RabbitListener가 이 설정을 따른다.
+rabbitmq:
+  listener:
+    simple:
+      retry:
+        enabled: true
+        max-retries: 4        # 최초 1회 + 재시도 4회 = 총 5회 (큐의 x-delivery-limit 5와 동일한 의미)
+        initial-interval: 2s
+        multiplier: 1.0       # 고정 간격 (지수 증가 없음)
+        max-interval: 2s
+
+# OpenSearch는 로컬/배포 모두 환경변수로만 접속하는 구조라 프로필 공통으로 둔다
+aws:
+  opensearch:
+    host: ${AWS_OPENSEARCH_HOST}
+    region: ${AWS_OPENSEARCH_REGION:ap-northeast-2}
+    access-key: ${AWS_OPENSEARCH_ACCESS_KEY}
+    secret-key: ${AWS_OPENSEARCH_SECRET_KEY}
+
+report:
+  download-url:
+    expire: 604800000 # 7일 (ms)
+  mail:
+    # 예약 시각이 도래한 완료 메일을 훑는 주기. sendTime이 분 단위라 10분이면 충분하고,
+    # 재시도 간격 자체는 이 주기가 아니라 예약 시각(실패 시 다음 날)이 결정한다
+    scheduler-cron: "0 */10 * * * *"
+cloud:
+  aws:
+    region: ap-northeast-2
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    opensearch:
+      host: ${AWS_OPENSEARCH_HOST}
+      region: ${AWS_OPENSEARCH_REGION:ap-northeast-2}
+      access-key: ${AWS_OPENSEARCH_ACCESS_KEY}
+      secret-key: ${AWS_OPENSEARCH_SECRET_KEY}
+
+raw-db:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/raw_db
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password:
