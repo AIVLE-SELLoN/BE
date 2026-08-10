@@ -7,7 +7,6 @@ import tools.jackson.databind.annotation.JsonNaming;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record MonthlyReportPayload(
-        Long companyId,
         String reportId,
         String reportMonth,
         ReportStatus status,

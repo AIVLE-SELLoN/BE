@@ -34,8 +34,8 @@ public class ReportService {
     }
 
     @Transactional
-    public void saveGeneratedReport(MonthlyReportPayload payload) {
-        Company company = findCompany(payload.companyId());
+    public void saveGeneratedReport(String companyKey, MonthlyReportPayload payload) {
+        Company company = findCompany(companyKey);
 
         // reportId는 RPT-{YYYYMM} 형식이라 회사를 함께 봐야 다른 회사 리포트를 덮어쓰지 않는다
         Report report = reportRepository.findByCompanyIdAndReportId(company.getId(), payload.reportId())
@@ -67,11 +67,12 @@ public class ReportService {
         }
     }
 
-    private Company findCompany(Long companyId) {
-        if (companyId == null)
+    // company_id는 DB PK가 아니라 회원가입 시 발급되는 회사 식별키(join_key)다.
+    private Company findCompany(String companyKey) {
+        if (companyKey == null || companyKey.isBlank())
             throw new CompanyNotFoundException();
 
-        return companyRepository.findById(companyId)
+        return companyRepository.findByJoinKey(companyKey)
                 .orElseThrow(CompanyNotFoundException::new);
     }
 }
