@@ -1,6 +1,7 @@
 package com.aivle.sellon.domain.alert.controller;
 
 import com.aivle.sellon.domain.alert.dto.response.AlertListResponse;
+import com.aivle.sellon.domain.alert.dto.response.AlertDetailResponse;
 import com.aivle.sellon.domain.alert.service.AlertService;
 import com.aivle.sellon.global.common.ApiResponse;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,5 +32,13 @@ public class AlertController {
             @RequestParam(defaultValue = "false") boolean unreadOnly
     ) {
         return ApiResponse.ok(alertService.getAlerts(principal, cursor, size, unreadOnly));
+    }
+
+    @GetMapping("/{notificationId}")
+    public ResponseEntity<ApiResponse<AlertDetailResponse>> getAlert(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long notificationId
+    ) {
+        return ApiResponse.ok(alertService.getAlert(principal, notificationId));
     }
 }
