@@ -24,9 +24,6 @@ public class ProposalIngestService {
     private final ProposalRepository proposalRepository;
     private final ProposalEvidenceRepository proposalEvidenceRepository;
 
-    // AI가 배치에서 생성까지 끝낸 뒤 발행하는 구조라 여기서 AI를 추가로 호출하지 않는다.
-    // 컨슈머(AlertDetectedHandler)에서만 호출되고 응답을 돌려줄 곳이 없어 void — 반환값이 필요하면
-    // ProposalQueryService.getProposalDetail()로 별도 조회한다.
     @Transactional
     public void ingestAnalyzedAlert(User rootUser, AlertAnalyzedPayload payload) {
         Proposal proposal = proposalRepository.findByAlertId(payload.alertId())

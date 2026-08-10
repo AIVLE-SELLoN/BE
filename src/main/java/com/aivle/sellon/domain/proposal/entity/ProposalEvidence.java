@@ -6,8 +6,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-// mq_events.md §4.2 recommendation.citations[] = {inquiry_id, quote}에 대응.
-// 기존 sourceField/verified는 실제 계약에 없어 제거 — 현재 citations는 항상 빈 배열로 온다.
 @Entity
 @Table(name = "report_evidence")
 @Getter

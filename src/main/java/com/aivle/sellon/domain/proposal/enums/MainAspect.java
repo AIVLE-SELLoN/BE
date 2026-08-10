@@ -2,7 +2,6 @@ package com.aivle.sellon.domain.proposal.enums;
 
 import java.util.Arrays;
 
-// mq_events.md §9
 public enum MainAspect {
     COLOR("색상"),
     SIZE("사이즈"),

@@ -19,10 +19,6 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-// main.inbound 큐(ai.# 전체 수신)로 들어오는 이상탐지+개선안 완료 이벤트를 받아
-// 개선안 리포트를 생성/갱신하는 컨슈머. MonthlyReportEventHandler와 동일한 구조를 따른다.
-// mq_events.md §4 확정 스펙 반영: recommendation은 이미 이 이벤트에 다 담겨 오므로
-// (AI가 배치에서 생성까지 끝낸 뒤 발행) 별도로 AI를 호출하지 않는다 — REST 클라이언트 호출 삭제.
 @Slf4j
 @Component
 @RequiredArgsConstructor

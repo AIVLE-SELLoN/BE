@@ -16,12 +16,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-// mq_events.md §4 (ai.anomaly.analyzed) 확정 스펙 기준으로 재설계.
-// report_url/product_sku/product_name/cs_summary는 실제 계약에 없어 제거했다
-// (ddl-auto: update라 DB에는 옛 컬럼이 남아있을 수 있음 — 필요시 수동 정리).
-// 테이블명을 report -> proposal로 분리 (CS PR 리뷰 반영). 월간 리포트 엔티티도 @Table(name = "report")를
-// 써서 한 테이블에 두 엔티티 컬럼이 섞여 있었고, PK 충돌로 report_mail_delivery의 FK가 엉뚱한 컬럼을
-// 참조하는 버그까지 있었다(월간 리포트 팀에 별도 공유 필요).
 @Entity
 @Table(name = "proposal")
 @Getter

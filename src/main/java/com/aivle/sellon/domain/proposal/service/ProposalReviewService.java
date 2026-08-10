@@ -34,11 +34,7 @@ public class ProposalReviewService {
     private final ProposalAccessGuard accessGuard;
     private final ProposalResponseMapper responseMapper;
 
-    // [확정] "분석 재요청" — AI에게 "지금 당장 다시 만들어달라"고 동기 호출하는 API는 없다.
-    // 반려 사유를 실어 feedback.recommendation.reviewed를 발행하는 것 자체가 트랜스포트다 — AI는 이
-    // 이벤트 이력으로 반려 사례 벡터DB를 쌓고 resolved_alert_ids를 자체 판단해 다음 배치에서 재분석한다(§8).
-    // 백엔드가 별도로 만들 API는 없다. 새 리포트는 다음 ai.anomaly.analyzed 이벤트가 오면
-    // ProposalIngestService가 갱신한다.
+
     @Transactional
     public ProposalDetailResponse regenerateProposal(Long reportKey, ProposalRegenerateRequest request, Long companyId) {
         Proposal proposal = proposalRepository.findById(reportKey)

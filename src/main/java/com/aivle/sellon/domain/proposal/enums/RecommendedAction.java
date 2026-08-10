@@ -2,8 +2,6 @@ package com.aivle.sellon.domain.proposal.enums;
 
 import java.util.Arrays;
 
-// mq_events.md §9. GENERATE_RECOMMENDATION(개선안 생성)일 때만 recommendation이 non-null이고,
-// 나머지 6종은 항상 recommendation이 null이라 개선안 리포트를 만들지 않는다(AlertDetectedHandler).
 public enum RecommendedAction {
     GENERATE_RECOMMENDATION("개선안 생성"),
     CHANNEL_OPERATION_CHECK("채널 운영 요소 점검 권장"),

@@ -12,11 +12,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-// feedback.recommendation.reviewed 실제 발행 구현체 (mq_events.md §3, §8).
-// main.inbound(수신)와 반대로 여긴 우리가 app.events 익스체인지에 직접 발행한다 —
-// 큐/바인딩(ai.inbound에 feedback.# 추가)은 인프라 CRD가 만드는 대상이라 여기서 선언하지 않는다(§2.1).
-// 참고할 기존 발행 예제가 프로젝트에 없어서(월간 리포트는 수신만 구현됨) RabbitMQConfig의
-// exchange 정보만으로 새로 작성했다.
 @Slf4j
 @Component
 @RequiredArgsConstructor

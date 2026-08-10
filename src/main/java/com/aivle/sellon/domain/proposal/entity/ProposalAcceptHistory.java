@@ -26,8 +26,6 @@ public class ProposalAcceptHistory extends BaseEntity {
     @Column(name = "improved_prev_content")
     private String improvedPrevContent;
 
-    // 승인 시점의 "적용된 개선안"(AI 제안 원문) 스냅샷 — 개선안 히스토리 모달의 "적용된 개선안"에 대응.
-    // Proposal.proposedContent는 재요청 시 덮어써질 수 있어서 승인 시점 값을 별도로 보관한다.
     @Column(name = "applied_proposed_content", length = 2000)
     private String appliedProposedContent;
 

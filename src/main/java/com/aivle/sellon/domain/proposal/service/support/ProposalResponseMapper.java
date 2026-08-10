@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-// Proposal/ProposalAcceptHistory 엔티티 -> 응답 DTO 매핑. Query/Ingest/Review/History 네 서비스가 공통으로 쓴다.
 @Component
 @RequiredArgsConstructor
 public class ProposalResponseMapper {
