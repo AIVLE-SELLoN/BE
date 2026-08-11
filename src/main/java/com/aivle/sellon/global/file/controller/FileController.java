@@ -1,8 +1,11 @@
-package com.aivle.sellon.global.file;
+package com.aivle.sellon.global.file.controller;
 
 import com.aivle.sellon.global.file.dto.FileUploadResponse;
+import com.aivle.sellon.global.file.enums.FileDirectory;
+import com.aivle.sellon.global.file.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,9 +19,13 @@ public class FileController {
 
     private final FileStorageService fileStorageService;
 
-    @PostMapping
-    public ResponseEntity<FileUploadResponse> upload(@RequestParam("file") MultipartFile file) {
-        String fileUrl = fileStorageService.store(file);
+    @PostMapping("/{directory}")
+    public ResponseEntity<FileUploadResponse> upload(
+            @PathVariable String directory,
+            @RequestParam("file") MultipartFile file
+    ) {
+        FileDirectory fileDirectory = FileDirectory.of(directory);
+        String fileUrl = fileStorageService.store(file, fileDirectory);
         return ResponseEntity.ok(new FileUploadResponse(fileUrl));
     }
 }

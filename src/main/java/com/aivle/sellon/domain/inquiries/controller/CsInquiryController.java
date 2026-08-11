@@ -9,6 +9,7 @@ import com.aivle.sellon.domain.inquiries.service.CsInquiryService;
 import com.aivle.sellon.domain.user.enums.Role;
 import com.aivle.sellon.domain.user.exception.AdminAccessRequiredException;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,7 +27,7 @@ public class CsInquiryController {
     @PostMapping
     public ResponseEntity<CsInquiryResponse> create(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestBody CsInquiryRequest request
+            @Valid @RequestBody CsInquiryRequest request
     ) {
         CsInquiryResponse response = csInquiryService.createInquiry(principal, request);
         return ResponseEntity.ok(response);
@@ -64,7 +65,7 @@ public class CsInquiryController {
     public ResponseEntity<CsInquiryResponse> update(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long inquireKey,
-            @RequestBody CsInquiryUpdateRequest request
+            @Valid @RequestBody CsInquiryUpdateRequest request
     ) {
         CsInquiryResponse response = csInquiryService.updateInquiry(principal, inquireKey, request);
         return ResponseEntity.ok(response);
@@ -83,7 +84,7 @@ public class CsInquiryController {
     public ResponseEntity<CsInquiryResponse> answer(
         @AuthenticationPrincipal UserPrincipal principal,
         @PathVariable Long inquireKey,
-        @RequestBody CsAnswerRequest request
+        @Valid @RequestBody CsAnswerRequest request
     ) {
         requireAdmin(principal);
         CsInquiryResponse response = csInquiryService.answerInquiry(inquireKey, request);

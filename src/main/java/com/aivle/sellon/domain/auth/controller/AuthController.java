@@ -1,6 +1,5 @@
 package com.aivle.sellon.domain.auth.controller;
 
-import com.aivle.sellon.domain.auth.dto.request.AdminSignupRequest;
 import com.aivle.sellon.domain.auth.dto.request.LoginRequest;
 import com.aivle.sellon.domain.auth.dto.request.MemberSignupRequest;
 import com.aivle.sellon.domain.auth.dto.request.ReissueRequest;
@@ -41,11 +40,6 @@ public class AuthController {
     @PostMapping("/register/member")
     public ResponseEntity<ApiResponse<SignupResponse>> signupMember(@Valid @RequestBody MemberSignupRequest request) {
         return ApiResponse.create(authService.signupMember(request));
-    }
-
-    @PostMapping("/register/admin")
-    public ResponseEntity<ApiResponse<SignupResponse>> signupAdmin(@Valid @RequestBody AdminSignupRequest request) {
-        return ApiResponse.create(authService.signupAdmin(request));
     }
 
     @PostMapping("/login")

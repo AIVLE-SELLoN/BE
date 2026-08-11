@@ -54,8 +54,10 @@ file:
   #   presigned-url-expire-minutes: 10
 sellon:
   admin:
-    register-key: ${ADMIN_REGISTER_KEY}
-    
+    seed:
+      email: ${ADMIN_SEED_EMAIL:}
+      password: ${ADMIN_SEED_PASSWORD:}
+      name: ${ADMIN_SEED_NAME:관리자}
 # OpenSearch는 로컬/배포 모두 환경변수로만 접속하는 구조라 프로필 공통으로 둔다
 aws:
   opensearch:
