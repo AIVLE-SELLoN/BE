@@ -11,4 +11,3 @@ public enum NotificationType {
 
     private final Class<?> targetClass;
 }
-

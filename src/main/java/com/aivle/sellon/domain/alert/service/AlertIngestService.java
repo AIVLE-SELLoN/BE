@@ -86,11 +86,21 @@ public class AlertIngestService {
     }
 
     private String buildNotificationMessage(AlertAnalyzedPayload payload) {
-        String channel = payload.channel() == AlertChannel.ALL ? "전 채널" : payload.channel().getJsonValue();
+        String channel = toChannelLabel(payload.channel());
         String phrase = payload.stats().source() == StatsSource.CS ? "문의 급증" : "리뷰 부정 급증";
         return "%s · %s · %s %s (%s%% → %s%%)".formatted(
                 payload.productGroupId(), channel, payload.mainAspect().getJsonValue(), phrase,
                 toPercent(payload.stats().pastRate()), toPercent(payload.stats().curRate()));
+    }
+
+    // AlertChannel은 payload에 영문 값으로 실려오므로(메시지 큐 컨벤션 6절) 표시용 한글 라벨은 여기서 붙인다.
+    private String toChannelLabel(AlertChannel channel) {
+        return switch (channel) {
+            case COUPANG -> "쿠팡";
+            case NAVER -> "네이버";
+            case ZIGZAG -> "지그재그";
+            case ALL -> "전 채널";
+        };
     }
 
     private String toPercent(BigDecimal rate) {

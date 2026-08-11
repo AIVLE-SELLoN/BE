@@ -37,4 +37,3 @@ public class AlertRootCause {
         this.consistent = consistent;
     }
 }
-

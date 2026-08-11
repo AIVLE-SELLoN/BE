@@ -9,4 +9,3 @@ public interface DetectionAlertRepository extends JpaRepository<DetectionAlert, 
 
     Optional<DetectionAlert> findByAlertCode(String alertCode);
 }
-

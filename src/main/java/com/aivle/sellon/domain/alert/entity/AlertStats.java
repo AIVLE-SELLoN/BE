@@ -64,4 +64,3 @@ public class AlertStats {
         this.curTotal = curTotal;
     }
 }
-
