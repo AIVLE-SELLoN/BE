@@ -19,9 +19,12 @@ public class S3PresignedUrlService {
     private String bucket;
 
     public String generateDownloadUrl(String key, Duration expiration) {
+        // 업로드 시점 메타데이터와 무관하게 항상 인라인 PDF로 열리도록 강제한다
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
+                .responseContentType("application/pdf")
+                .responseContentDisposition("inline")
                 .build();
 
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
