@@ -98,11 +98,6 @@ public class Guideline extends BaseEntity {
             this.pdfS3Meta = incoming;
     }
 
-    /** 보관 기한이 지난 파일을 백엔드가 다시 만들어 올린 뒤, 그 파일을 가리키도록 바꾼다. */
-    public void replacePdfS3Meta(PdfS3Meta pdfS3Meta) {
-        this.pdfS3Meta = pdfS3Meta;
-    }
-
     private static PdfS3Meta toPdfS3Meta(PdfS3MetaPayload payload) {
         if (payload == null)
             return null;

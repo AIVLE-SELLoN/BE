@@ -1,9 +1,6 @@
 package com.aivle.sellon.domain.guideline.controller;
 
-import com.aivle.sellon.domain.guideline.dto.response.GuidelineDownloadResponse;
-import com.aivle.sellon.domain.guideline.dto.response.GuidelineFileResponse;
 import com.aivle.sellon.domain.guideline.dto.response.GuidelineListItemResponse;
-import com.aivle.sellon.domain.guideline.service.GuidelineFileService;
 import com.aivle.sellon.domain.guideline.service.GuidelineMailService;
 import com.aivle.sellon.domain.guideline.service.GuidelineService;
 import com.aivle.sellon.global.common.ApiResponse;
@@ -29,7 +26,6 @@ public class GuidelineController {
 
     private final GuidelineService guidelineService;
     private final GuidelineMailService guidelineMailService;
-    private final GuidelineFileService guidelineFileService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<CursorPageResponse<GuidelineListItemResponse>>> getGuidelines(
@@ -38,27 +34,6 @@ public class GuidelineController {
             @RequestParam(defaultValue = "20") @Positive int size
     ) {
         return ApiResponse.ok(guidelineService.getGuidelines(principal, cursor, size));
-    }
-
-    @GetMapping("/files")
-    public ResponseEntity<ApiResponse<CursorPageResponse<GuidelineFileResponse>>> getFiles(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "20") @Positive int size
-    ) {
-        return ApiResponse.ok(guidelineFileService.getFiles(principal, cursor, size));
-    }
-
-    /**
-     * 다운로드 버튼을 누른 시점에 파일이 아직 살아 있는지 확인하고, 만료됐으면 다시 만들어 링크를 준다.
-     * 재생성이라는 쓰기가 일어나므로 조회(GET)가 아닌 POST로 둔다.
-     */
-    @PostMapping("/{guidelineId}/download")
-    public ResponseEntity<ApiResponse<GuidelineDownloadResponse>> download(
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable String guidelineId
-    ) {
-        return ApiResponse.ok(guidelineFileService.download(principal, guidelineId));
     }
 
     @PostMapping("/{guidelineId}/mail")
