@@ -4,10 +4,15 @@ import com.aivle.sellon.domain.company.entity.Company;
 import com.aivle.sellon.domain.company.exception.CompanyNotFoundException;
 import com.aivle.sellon.domain.company.repository.CompanyRepository;
 import com.aivle.sellon.domain.guideline.dto.message.GuidelinePayload;
+import com.aivle.sellon.domain.guideline.dto.response.GuidelineListItemResponse;
 import com.aivle.sellon.domain.guideline.entity.Guideline;
 import com.aivle.sellon.domain.guideline.entity.GuidelineSummary;
+import com.aivle.sellon.domain.guideline.enums.GuidelineAvailability;
 import com.aivle.sellon.domain.guideline.repository.GuidelineRepository;
 import com.aivle.sellon.domain.guideline.repository.GuidelineSummaryRepository;
+import com.aivle.sellon.global.common.dto.CursorPageResponse;
+import com.aivle.sellon.global.common.utils.CursorUtils;
+import com.aivle.sellon.global.security.principal.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,10 +23,12 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 
 /**
- * 큐로 들어오는 CS 가이드라인을 저장만 한다. 메일 발송은 이 흐름의 트리거가 아니라
- * 화면에서 별도 버튼을 눌러야 시작되는 후속 기능이라 여기서 다루지 않는다.
+ * 큐로 들어오는 CS 가이드라인을 저장하고, 화면의 전체 목록 조회를 제공한다.
+ * 메일 발송은 이 저장 흐름의 트리거가 아니라 화면에서 별도 버튼을 눌러야 시작되는
+ * 후속 기능이라 이 서비스가 아닌 {@link GuidelineMailService}가 다룬다.
  */
 @Slf4j
 @Service
@@ -33,6 +40,36 @@ public class GuidelineService {
     private final GuidelineRepository guidelineRepository;
     private final GuidelineSummaryRepository guidelineSummaryRepository;
     private final CompanyRepository companyRepository;
+    private final GuidelineDownloadUrlService guidelineDownloadUrlService;
+    private final CursorUtils cursorUtils;
+
+    /**
+     * "완료/만료" 상태는 별도로 추적하지 않고, 조회 시점에 S3 Lifecycle 만료 여부로 계산한다.
+     */
+    public CursorPageResponse<GuidelineListItemResponse> getGuidelines(
+            UserPrincipal principal, String cursor, int size
+    ) {
+        Long cursorId = cursorUtils.toId(cursor);
+        List<GuidelineSummary> summaries = guidelineSummaryRepository
+                .findAllByCompanyId(principal.getCompanyId(), cursorId, size + 1);
+
+        boolean hasNext = summaries.size() > size;
+        List<GuidelineSummary> content = hasNext ? summaries.subList(0, size) : summaries;
+
+        List<GuidelineListItemResponse> items = content.stream()
+                .map(summary -> GuidelineListItemResponse.of(summary, resolveAvailability(summary.getGuideline())))
+                .toList();
+
+        String nextCursor = hasNext ? cursorUtils.toCursor(content.get(content.size() - 1).getId()) : null;
+
+        return new CursorPageResponse<>(items, nextCursor, hasNext);
+    }
+
+    private GuidelineAvailability resolveAvailability(Guideline guideline) {
+        return guidelineDownloadUrlService.isAvailable(guideline.getPdfS3Meta())
+                ? GuidelineAvailability.COMPLETED
+                : GuidelineAvailability.EXPIRED;
+    }
 
     @Transactional
     public void saveGeneratedGuideline(String companyKey, GuidelinePayload payload) {
