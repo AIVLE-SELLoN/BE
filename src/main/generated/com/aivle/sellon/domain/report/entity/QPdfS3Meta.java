@@ -21,8 +21,6 @@ public class QPdfS3Meta extends BeanPath<PdfS3Meta> {
 
     public final DateTimePath<java.time.LocalDateTime> createdAt = createDateTime("createdAt", java.time.LocalDateTime.class);
 
-    public final StringPath fileExtension = createString("fileExtension");
-
     public final NumberPath<Long> fileSizeBytes = createNumber("fileSizeBytes", Long.class);
 
     public final StringPath newFileName = createString("newFileName");

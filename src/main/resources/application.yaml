@@ -56,6 +56,12 @@ report:
     # 예약 시각이 도래한 완료 메일을 훑는 주기. sendTime이 분 단위라 10분이면 충분하고,
     # 재시도 간격 자체는 이 주기가 아니라 예약 시각(실패 시 다음 날)이 결정한다
     scheduler-cron: "0 */10 * * * *"
+guideline:
+  download-url:
+    expire: 604800000 # 파일 보관 기한과 동일한 7일 (ms)
+  file:
+    # 재생성해 올린 PDF도 S3 lifecycle을 그대로 따르므로, 만료 시각을 같은 기간으로 잡는다
+    retention: 604800000 # 7일 (ms)
 cloud:
   aws:
     region: ap-northeast-2
