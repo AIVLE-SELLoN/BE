@@ -16,17 +16,24 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
 public class AlertIngestService {
 
+    private static final ZoneId KOREA_ZONE_ID = ZoneId.of("Asia/Seoul");
+
     private final DetectionAlertRepository detectionAlertRepository;
     private final NotificationRepository notificationRepository;
     private final CompanyRepository companyRepository;
+    private final JsonMapper jsonMapper;
 
     @Transactional
     public void ingest(AlertAnalyzedPayload payload, String companyKey) {
@@ -40,7 +47,7 @@ public class AlertIngestService {
 
         DetectionAlert alert = detectionAlertRepository.save(create(payload, company));
         notificationRepository.save(Notification.createForAlert(
-                company, buildNotificationMessage(payload), payload.detectedAt(), alert.getId()));
+                company, buildNotificationMessage(payload), toKoreaStandardTime(payload.detectedAt()), alert.getId()));
     }
 
     private Company findCompany(String companyKey) {
@@ -54,24 +61,24 @@ public class AlertIngestService {
 
     private DetectionAlert create(AlertAnalyzedPayload payload, Company company) {
         return DetectionAlert.create(
-                payload.alertId(), payload.detectedAt(), payload.updatesAlertId(), company,
+                payload.alertId(), toKoreaStandardTime(payload.detectedAt()), payload.updatesAlertId(), company,
                 payload.productGroupId(), payload.channel(), payload.windowStart(), payload.windowEnd(),
                 payload.verdict(), toJson(payload.significantChannels()), toJson(payload.excludedChannels()),
                 payload.mainAspect(), toJson(payload.subAspects()), toStats(payload.stats()),
                 toJson(payload.sourceSignals()), toRootCause(payload.rootCause()), payload.detectionConfidence(),
                 payload.scopeIn(), payload.recommendedAction(), toJson(payload.evidence().inquiryIds()),
-                payload.evidence().linkedChangeId(), null
+                payload.evidence().linkedChangeId(), toJsonString(payload.channelRates())
         );
     }
 
     private void update(DetectionAlert alert, AlertAnalyzedPayload payload) {
         alert.update(
-                payload.detectedAt(), payload.updatesAlertId(), payload.productGroupId(), payload.channel(),
+                toKoreaStandardTime(payload.detectedAt()), payload.updatesAlertId(), payload.productGroupId(), payload.channel(),
                 payload.windowStart(), payload.windowEnd(), payload.verdict(), toJson(payload.significantChannels()),
                 toJson(payload.excludedChannels()), payload.mainAspect(), toJson(payload.subAspects()),
                 toStats(payload.stats()), toJson(payload.sourceSignals()), toRootCause(payload.rootCause()),
                 payload.detectionConfidence(), payload.scopeIn(), payload.recommendedAction(),
-                toJson(payload.evidence().inquiryIds()), payload.evidence().linkedChangeId(), null
+                toJson(payload.evidence().inquiryIds()), payload.evidence().linkedChangeId(), toJsonString(payload.channelRates())
         );
     }
 
@@ -109,5 +116,13 @@ public class AlertIngestService {
 
     private String toJson(JsonNode node) {
         return node == null || node.isNull() ? null : node.toString();
+    }
+
+    private String toJsonString(Object value) {
+        return value == null ? null : jsonMapper.writeValueAsString(value);
+    }
+
+    private LocalDateTime toKoreaStandardTime(OffsetDateTime detectedAt) {
+        return detectedAt.atZoneSameInstant(KOREA_ZONE_ID).toLocalDateTime();
     }
 }

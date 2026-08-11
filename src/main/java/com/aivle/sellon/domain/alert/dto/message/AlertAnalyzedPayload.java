@@ -12,12 +12,13 @@ import tools.jackson.databind.JsonNode;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.List;
 
 @JsonIgnoreProperties({"recommendation", "channel_breakdown_snapshot"})
 public record AlertAnalyzedPayload(
         @JsonProperty("alert_id") String alertId,
-        @JsonProperty("detected_at") LocalDateTime detectedAt,
+        @JsonProperty("detected_at") OffsetDateTime detectedAt,
         @JsonProperty("updates_alert_id") String updatesAlertId,
         @JsonProperty("product_group_id") String productGroupId,
         AlertChannel channel,
@@ -34,7 +35,8 @@ public record AlertAnalyzedPayload(
         @JsonProperty("detection_confidence") DetectionConfidence detectionConfidence,
         @JsonProperty("scope_in") Boolean scopeIn,
         @JsonProperty("recommended_action") RecommendedAction recommendedAction,
-        Evidence evidence
+        Evidence evidence,
+        @JsonProperty("channel_rates") List<ChannelRate> channelRates
 ) {
     public record Stats(
             StatsSource source,
@@ -52,6 +54,14 @@ public record AlertAnalyzedPayload(
             Integer count,
             Integer total,
             Boolean consistent
+    ) {
+    }
+
+    public record ChannelRate(
+            String channel,
+            BigDecimal rate,
+            Boolean excluded,
+            Integer total
     ) {
     }
 

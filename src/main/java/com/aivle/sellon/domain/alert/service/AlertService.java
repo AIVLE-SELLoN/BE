@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -98,12 +99,53 @@ public class AlertService {
     private AlertDetailResponse.AlertResponse toAlertResponse(DetectionAlert alert) {
         return AlertDetailResponse.AlertResponse.of(
                 alert,
-                parseJsonArray("subAspects", alert.getSubAspects()),
+                parseSubAspects(alert.getSubAspects()),
                 parseJsonArray("significantChannels", alert.getSignificantChannels()),
                 parseJsonArray("excludedChannels", alert.getExcludedChannels()),
+                parseChannelRates(alert.getChannelRates()),
                 parseSourceSignals("sourceSignals", alert.getSourceSignals()),
                 parseJsonArray("evidenceInquiryIds", alert.getEvidenceInquiryIds())
         );
+    }
+
+    private List<AlertDetailResponse.ChannelRateResponse> parseChannelRates(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        try {
+            JsonNode node = jsonMapper.readTree(value);
+            if (!node.isArray()) {
+                log.warn("JSON 배열이 필요한 필드에 다른 JSON 타입이 들어왔습니다. fieldName=channelRates, value={}", value);
+                return null;
+            }
+            return jsonMapper.convertValue(node,
+                    new TypeReference<List<AlertDetailResponse.ChannelRateResponse>>() {
+                    });
+        } catch (Exception e) {
+            log.warn("JSON 배열 파싱에 실패했습니다. fieldName=channelRates, value={}", value, e);
+            return null;
+        }
+    }
+
+    private List<AlertDetailResponse.SubAspectResponse> parseSubAspects(String value) {
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+
+        try {
+            JsonNode node = jsonMapper.readTree(value);
+            if (!node.isArray()) {
+                log.warn("JSON 배열이 필요한 필드에 다른 JSON 타입이 들어왔습니다. fieldName=subAspects, value={}", value);
+                return List.of();
+            }
+            return jsonMapper.convertValue(node,
+                    new TypeReference<List<AlertDetailResponse.SubAspectResponse>>() {
+                    });
+        } catch (Exception e) {
+            log.warn("JSON 배열 파싱에 실패했습니다. fieldName=subAspects, value={}", value, e);
+            return List.of();
+        }
     }
 
     private AlertDetailResponse.SourceSignalsResponse parseSourceSignals(String fieldName, String value) {
@@ -131,7 +173,7 @@ public class AlertService {
                         fieldName, value);
                 return List.of();
             }
-            return jsonMapper.convertValue(node, new tools.jackson.core.type.TypeReference<List<Object>>() {
+            return jsonMapper.convertValue(node, new TypeReference<List<Object>>() {
             });
         } catch (Exception e) {
             log.warn("JSON 배열 파싱에 실패했습니다. fieldName={}, value={}", fieldName, value, e);
