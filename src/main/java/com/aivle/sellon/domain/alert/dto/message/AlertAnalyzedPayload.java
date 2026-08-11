@@ -34,8 +34,7 @@ public record AlertAnalyzedPayload(
         @JsonProperty("detection_confidence") DetectionConfidence detectionConfidence,
         @JsonProperty("scope_in") Boolean scopeIn,
         @JsonProperty("recommended_action") RecommendedAction recommendedAction,
-        @JsonProperty("evidence_inquiry_ids") JsonNode evidenceInquiryIds,
-        @JsonProperty("linked_change_id") String linkedChangeId
+        Evidence evidence
 ) {
     public record Stats(
             StatsSource source,
@@ -53,6 +52,16 @@ public record AlertAnalyzedPayload(
             Integer count,
             Integer total,
             Boolean consistent
+    ) {
+    }
+
+    /**
+     * payload는 evidence를 중첩 객체로 보내지만(메시지 큐 컨벤션 4.1절),
+     * DetectionAlert는 두 값을 평면 컬럼으로 저장하므로 여기서만 중첩을 받고 서비스에서 펼친다.
+     */
+    public record Evidence(
+            @JsonProperty("inquiry_ids") JsonNode inquiryIds,
+            @JsonProperty("linked_change_id") String linkedChangeId
     ) {
     }
 }

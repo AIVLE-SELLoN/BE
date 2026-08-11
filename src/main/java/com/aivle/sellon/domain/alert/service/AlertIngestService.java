@@ -59,8 +59,8 @@ public class AlertIngestService {
                 payload.verdict(), toJson(payload.significantChannels()), toJson(payload.excludedChannels()),
                 payload.mainAspect(), toJson(payload.subAspects()), toStats(payload.stats()),
                 toJson(payload.sourceSignals()), toRootCause(payload.rootCause()), payload.detectionConfidence(),
-                payload.scopeIn(), payload.recommendedAction(), toJson(payload.evidenceInquiryIds()),
-                payload.linkedChangeId(), null
+                payload.scopeIn(), payload.recommendedAction(), toJson(payload.evidence().inquiryIds()),
+                payload.evidence().linkedChangeId(), null
         );
     }
 
@@ -71,7 +71,7 @@ public class AlertIngestService {
                 toJson(payload.excludedChannels()), payload.mainAspect(), toJson(payload.subAspects()),
                 toStats(payload.stats()), toJson(payload.sourceSignals()), toRootCause(payload.rootCause()),
                 payload.detectionConfidence(), payload.scopeIn(), payload.recommendedAction(),
-                toJson(payload.evidenceInquiryIds()), payload.linkedChangeId(), null
+                toJson(payload.evidence().inquiryIds()), payload.evidence().linkedChangeId(), null
         );
     }
 

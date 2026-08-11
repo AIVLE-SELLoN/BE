@@ -76,7 +76,8 @@ public class AlertAnalyzedEventHandler implements MqEventHandler {
         requireValue(payload.detectionConfidence(), "detection_confidence");
         requireValue(payload.scopeIn(), "scope_in");
         requireValue(payload.recommendedAction(), "recommended_action");
-        requireValue(payload.evidenceInquiryIds(), "evidence_inquiry_ids");
+        requireValue(payload.evidence(), "evidence");
+        requireValue(payload.evidence().inquiryIds(), "evidence.inquiry_ids");
     }
 
     private void requireText(String value, String fieldName) {
