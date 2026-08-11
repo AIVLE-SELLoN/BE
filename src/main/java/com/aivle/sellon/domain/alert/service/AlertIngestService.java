@@ -94,10 +94,18 @@ public class AlertIngestService {
 
     private String buildNotificationMessage(AlertAnalyzedPayload payload) {
         String channel = toChannelLabel(payload.channel());
-        String phrase = payload.stats().source() == StatsSource.CS ? "문의 급증" : "리뷰 부정 급증";
+        String phrase = toSourcePhrase(payload.stats().source());
         return "%s · %s · %s %s (%s%% → %s%%)".formatted(
                 payload.productGroupId(), channel, payload.mainAspect().getJsonValue(), phrase,
                 toPercent(payload.stats().pastRate()), toPercent(payload.stats().curRate()));
+    }
+
+    // switch expression으로 두면 StatsSource에 값이 추가될 때 컴파일 단계에서 누락이 잡힌다.
+    private String toSourcePhrase(StatsSource source) {
+        return switch (source) {
+            case CS -> "문의 급증";
+            case REVIEW -> "리뷰 부정 급증";
+        };
     }
 
     // AlertChannel은 payload에 영문 값으로 실려오므로(메시지 큐 컨벤션 6절) 표시용 한글 라벨은 여기서 붙인다.
