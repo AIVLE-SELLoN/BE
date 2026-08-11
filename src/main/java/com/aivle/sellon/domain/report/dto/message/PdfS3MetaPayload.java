@@ -12,6 +12,7 @@ public record PdfS3MetaPayload(
         String originalFileName,
         String newFileName,
         String s3FullKey,
+        String fileExtension,
         Long fileSizeBytes,
         String presignedUrl,
         Instant createdAt,

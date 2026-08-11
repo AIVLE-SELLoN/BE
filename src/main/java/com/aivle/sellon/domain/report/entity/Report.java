@@ -101,6 +101,7 @@ public class Report extends BaseEntity {
                 payload.originalFileName(),
                 payload.newFileName(),
                 payload.s3FullKey(),
+                payload.fileExtension(),
                 payload.fileSizeBytes(),
                 payload.presignedUrl(),
                 toLocalDateTime(payload.createdAt()),

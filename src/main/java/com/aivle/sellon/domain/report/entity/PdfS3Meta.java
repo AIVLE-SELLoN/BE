@@ -18,6 +18,7 @@ public class PdfS3Meta {
     private String originalFileName;
     private String newFileName;
     private String s3FullKey;
+    private String fileExtension;
     private Long fileSizeBytes;
 
     @Column(length = 2048)
@@ -31,13 +32,14 @@ public class PdfS3Meta {
     private LocalDateTime objectExpiresAt;
 
     private PdfS3Meta(String s3BucketName, String s3FilePath, String originalFileName, String newFileName,
-                       String s3FullKey, Long fileSizeBytes, String presignedUrl,
+                       String s3FullKey, String fileExtension, Long fileSizeBytes, String presignedUrl,
                        LocalDateTime createdAt, LocalDateTime presignedExpiresAt, LocalDateTime objectExpiresAt) {
         this.s3BucketName = s3BucketName;
         this.s3FilePath = s3FilePath;
         this.originalFileName = originalFileName;
         this.newFileName = newFileName;
         this.s3FullKey = s3FullKey;
+        this.fileExtension = fileExtension;
         this.fileSizeBytes = fileSizeBytes;
         this.presignedUrl = presignedUrl;
         this.createdAt = createdAt;
@@ -46,10 +48,10 @@ public class PdfS3Meta {
     }
 
     public static PdfS3Meta of(String s3BucketName, String s3FilePath, String originalFileName, String newFileName,
-                                String s3FullKey, Long fileSizeBytes, String presignedUrl,
+                                String s3FullKey, String fileExtension, Long fileSizeBytes, String presignedUrl,
                                 LocalDateTime createdAt, LocalDateTime presignedExpiresAt,
                                 LocalDateTime objectExpiresAt) {
-        return new PdfS3Meta(s3BucketName, s3FilePath, originalFileName, newFileName, s3FullKey,
+        return new PdfS3Meta(s3BucketName, s3FilePath, originalFileName, newFileName, s3FullKey, fileExtension,
                 fileSizeBytes, presignedUrl, createdAt, presignedExpiresAt, objectExpiresAt);
     }
 }
