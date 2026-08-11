@@ -29,6 +29,18 @@ spring:
     token:
       expire: 1800000
 
+  # 리스너 재시도 정책 (환경 무관 공통). 기본 컨테이너 팩토리에 적용되므로
+  # containerFactory를 따로 지정하지 않은 모든 @RabbitListener가 이 설정을 따른다.
+  rabbitmq:
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-retries: 4        # 최초 1회 + 재시도 4회 = 총 5회 (큐의 x-delivery-limit 5와 동일한 의미)
+          initial-interval: 2s
+          multiplier: 1.0       # 고정 간격 (지수 증가 없음)
+          max-interval: 2s
+
 # OpenSearch는 로컬/배포 모두 환경변수로만 접속하는 구조라 프로필 공통으로 둔다
 aws:
   opensearch:
@@ -40,3 +52,26 @@ aws:
 report:
   download-url:
     expire: 604800000 # 7일 (ms)
+cloud:
+  aws:
+    region: ap-northeast-2
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    s3:
+      bucket:
+        image: ${AWS_S3_IMAGE_BUCKET}
+    opensearch:
+      host: ${AWS_OPENSEARCH_HOST}
+      region: ${AWS_OPENSEARCH_REGION:ap-northeast-2}
+      access-key: ${AWS_OPENSEARCH_ACCESS_KEY}
+      secret-key: ${AWS_OPENSEARCH_SECRET_KEY}
+
+raw-db:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/raw_db
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password:
+
+

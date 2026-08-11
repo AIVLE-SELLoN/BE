@@ -27,16 +27,28 @@ public class MonthlyReportListener {
     @RabbitListener(queues = RabbitMQConfig.MAIN_INBOUND_QUEUE)
     public void onAiEvent(JsonNode envelope) {
         String eventType = envelope.path("eventType").asString(null);
-        if (!REPORT_GENERATED_EVENT_TYPE.equals(eventType))
-            return;
-
         String eventId = envelope.path("eventId").asString(null);
         String traceId = envelope.path("traceId").asString(null);
 
+        // main.inbound는 ai.# 전체를 받는데 현재 컨슈머는 이것 하나뿐이라, 처리하지 않는 이벤트는
+        // ack 후 사라진다. 나중에 컨슈머가 추가되기 전까지 무엇이 유실되는지 남겨둔다.
+        if (!REPORT_GENERATED_EVENT_TYPE.equals(eventType)) {
+            log.warn("처리 대상이 아닌 이벤트 폐기 - eventType={}, eventId={}, traceId={}",
+                    eventType, eventId, traceId);
+            return;
+        }
+
+        // 파싱과 저장을 한 try에 두면 서비스 내부에서 난 IllegalArgumentException이
+        // MALFORMED_PAYLOAD로 오분류돼 재시도 없이 DLQ로 직행한다. 범위를 나눠 둔다.
+        MonthlyReportPayload payload;
         try {
-            reportService.saveGeneratedReport(readPayload(envelope));
+            payload = readPayload(envelope);
         } catch (JacksonException | IllegalArgumentException e) {
             throw deadLetter(EventFailureReason.MALFORMED_PAYLOAD, eventId, traceId, e);
+        }
+
+        try {
+            reportService.saveGeneratedReport(payload);
         } catch (CompanyNotFoundException e) {
             throw deadLetter(EventFailureReason.UNKNOWN_COMPANY, eventId, traceId, e);
         }
