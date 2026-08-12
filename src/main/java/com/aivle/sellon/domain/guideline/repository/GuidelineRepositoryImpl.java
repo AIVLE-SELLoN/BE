@@ -31,12 +31,13 @@ public class GuidelineRepositoryImpl implements GuidelineRepositoryCustom {
     }
 
     @Override
-    public List<Guideline> findAllWithFileByCompanyId(Long companyId, Long cursorId, int limit) {
+    public List<Guideline> findAllWithFileByCompanyId(Long companyId, String query, Long cursorId, int limit) {
         return queryFactory
                 .selectFrom(guideline)
                 .where(
                         guideline.company.id.eq(companyId),
                         guideline.pdfS3Meta.s3FullKey.isNotNull(),
+                        searchCondition(query),
                         cursorCondition(cursorId)
                 )
                 .orderBy(guideline.id.desc())
@@ -57,5 +58,13 @@ public class GuidelineRepositoryImpl implements GuidelineRepositoryCustom {
 
     private BooleanExpression cursorCondition(Long cursorId) {
         return cursorId != null ? guideline.id.lt(cursorId) : null;
+    }
+
+    private BooleanExpression searchCondition(String query) {
+        if (query == null || query.isBlank())
+            return null;
+
+        return guideline.guidelineId.containsIgnoreCase(query)
+                .or(guideline.pdfS3Meta.originalFileName.containsIgnoreCase(query));
     }
 }

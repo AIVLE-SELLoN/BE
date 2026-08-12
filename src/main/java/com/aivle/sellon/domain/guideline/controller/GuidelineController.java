@@ -35,18 +35,20 @@ public class GuidelineController {
     public ResponseEntity<ApiResponse<CursorPageResponse<GuidelineListItemResponse>>> getGuidelines(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "20") @Positive int size
+            @RequestParam(defaultValue = "20") @Positive int size,
+            @RequestParam(required = false) String q
     ) {
-        return ApiResponse.ok(guidelineService.getGuidelines(principal, cursor, size));
+        return ApiResponse.ok(guidelineService.getGuidelines(principal, cursor, size, q));
     }
 
     @GetMapping("/files")
     public ResponseEntity<ApiResponse<CursorPageResponse<GuidelineFileResponse>>> getFiles(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "20") @Positive int size
+            @RequestParam(defaultValue = "20") @Positive int size,
+            @RequestParam(required = false) String q
     ) {
-        return ApiResponse.ok(guidelineFileService.getFiles(principal, cursor, size));
+        return ApiResponse.ok(guidelineFileService.getFiles(principal, cursor, size, q));
     }
 
     /**

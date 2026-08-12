@@ -47,11 +47,11 @@ public class GuidelineService {
      * "완료/만료" 상태는 별도로 추적하지 않고, 조회 시점에 S3 Lifecycle 만료 여부로 계산한다.
      */
     public CursorPageResponse<GuidelineListItemResponse> getGuidelines(
-            UserPrincipal principal, String cursor, int size
+            UserPrincipal principal, String cursor, int size, String query
     ) {
         Long cursorId = cursorUtils.toId(cursor);
         List<GuidelineSummary> summaries = guidelineSummaryRepository
-                .findAllByCompanyId(principal.getCompanyId(), cursorId, size + 1);
+                .findAllByCompanyId(principal.getCompanyId(), query, cursorId, size + 1);
 
         boolean hasNext = summaries.size() > size;
         List<GuidelineSummary> content = hasNext ? summaries.subList(0, size) : summaries;
