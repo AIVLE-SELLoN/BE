@@ -4,7 +4,6 @@ import com.aivle.sellon.global.file.exception.ExtensionEmptyException;
 import com.aivle.sellon.global.file.exception.InvalidDirectoryException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -26,7 +25,17 @@ public enum FileDirectory {
             Duration.ofMinutes(10),
             Duration.ofHours(24),
             10 * 1024 * 1024L,
-            Set.of(AcceptableFileType.PDF));
+            Set.of(AcceptableFileType.PDF)),
+
+    // CS 문의 첨부파일 - 스크린샷/문서 첨부를 고려해 이미지+PDF 허용
+    INQUIRY("inquiry",
+            Duration.ofMinutes(10),
+            Duration.ofHours(24),
+            10 * 1024 * 1024L,
+            Set.of(AcceptableFileType.JPG,
+                   AcceptableFileType.JPEG,
+                   AcceptableFileType.PNG,
+                   AcceptableFileType.PDF));
 
     private final String prefix;
     private final Duration uploadTime;  //  presigned-url 만료시간 작성

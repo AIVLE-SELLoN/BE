@@ -67,6 +67,7 @@ public class SecurityConfig {
                                 "/api/v1/sellon/verification/email-verification",
                                 "/api/v1/sellon/verification/email-verification/confirm")
                         .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
                         .requestMatchers(PERMIT_ALL_PATHS).permitAll()
                         .anyRequest().authenticated()
                 )
