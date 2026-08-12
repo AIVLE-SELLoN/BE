@@ -128,12 +128,12 @@ class GuidelineFileServiceTest {
         ReflectionTestUtils.setField(first, "id", 9L);
         ReflectionTestUtils.setField(second, "id", 5L);
         when(cursorUtils.toId(null)).thenReturn(null);
-        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, null, 2))
+        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, null, null, 2))
                 .thenReturn(List.of(first, second));
         when(guidelineDownloadUrlService.isAvailable(any())).thenReturn(true);
         when(cursorUtils.toCursor(9L)).thenReturn("next-cursor");
 
-        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 1);
+        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 1, null);
 
         assertEquals(1, response.content().size());
         assertTrue(response.hasNext());
@@ -144,11 +144,11 @@ class GuidelineFileServiceTest {
     @DisplayName("마지막 페이지에서는 다음 커서를 주지 않는다")
     void marksLastPage() {
         when(cursorUtils.toId(null)).thenReturn(null);
-        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, null, 21))
+        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, null, null, 21))
                 .thenReturn(List.of(guideline(meta("a.pdf"))));
         when(guidelineDownloadUrlService.isAvailable(any())).thenReturn(true);
 
-        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 20);
+        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 20, null);
 
         assertEquals(1, response.content().size());
         assertFalse(response.hasNext());
@@ -160,13 +160,26 @@ class GuidelineFileServiceTest {
     @DisplayName("보관 기한이 지난 파일은 목록에서 EXPIRED로 보여 재생성이 필요함을 알린다")
     void marksExpiredFileInList() {
         when(cursorUtils.toId(null)).thenReturn(null);
-        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, null, 21))
+        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, null, null, 21))
                 .thenReturn(List.of(guideline(meta("a.pdf"))));
         when(guidelineDownloadUrlService.isAvailable(any())).thenReturn(false);
 
-        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 20);
+        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 20, null);
 
         assertEquals(GuidelineAvailability.EXPIRED, response.content().get(0).status());
+    }
+
+    @Test
+    @DisplayName("검색어를 주면 리포지토리에 그대로 전달한다")
+    void passesSearchQueryToRepository() {
+        when(cursorUtils.toId(null)).thenReturn(null);
+        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, "coupang", null, 21))
+                .thenReturn(List.of(guideline(meta("a.pdf"))));
+        when(guidelineDownloadUrlService.isAvailable(any())).thenReturn(true);
+
+        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 20, "coupang");
+
+        assertEquals(1, response.content().size());
     }
 
     private Guideline guideline(PdfS3Meta meta) {

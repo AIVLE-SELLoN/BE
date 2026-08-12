@@ -20,8 +20,19 @@ public class S3PresignedUrlService {
     @Value("${cloud.aws.s3.report.bucket}")
     private String bucket;
 
+    /**
+     * 업로드 시점 메타데이터와 무관하게 항상 인라인 PDF로 열리도록 강제한다. (월간 리포트 뷰어 전용)
+     * 다운로드로 받게 하려면 파일명을 지정하는 {@link #generateDownloadUrl(String, String, Duration)}을 쓴다.
+     */
     public String generateDownloadUrl(String key, Duration expiration) {
-        return presign(GetObjectRequest.builder().bucket(bucket).key(key).build(), expiration);
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .responseContentType("application/pdf")
+                .responseContentDisposition("inline")
+                .build();
+
+        return presign(getObjectRequest, expiration);
     }
 
     /**

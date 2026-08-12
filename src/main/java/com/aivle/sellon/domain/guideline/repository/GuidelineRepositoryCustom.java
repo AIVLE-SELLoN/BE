@@ -17,8 +17,10 @@ public interface GuidelineRepositoryCustom {
      * 파일 히스토리 조회. 커서(guideline_id) 기준 최신순이며,
      * limit은 hasNext 판단을 위해 호출부가 요청 size + 1로 넘긴다.
      * 한 번도 파일이 올라온 적 없는 건(생성 실패 등)은 내려받을 대상이 아니라 제외한다.
+     *
+     * @param query guidelineId·원본 파일명 부분 일치 검색어. null/blank면 필터 없이 전체 조회
      */
-    List<Guideline> findAllWithFileByCompanyId(Long companyId, Long cursorId, int limit);
+    List<Guideline> findAllWithFileByCompanyId(Long companyId, String query, Long cursorId, int limit);
 
     /**
      * 재생성 대상을 락과 함께 가져온다. 같은 파일에 대한 다운로드 요청이 동시에 들어와도

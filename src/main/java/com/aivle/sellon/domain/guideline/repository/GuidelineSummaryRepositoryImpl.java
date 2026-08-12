@@ -29,12 +29,13 @@ public class GuidelineSummaryRepositoryImpl implements GuidelineSummaryRepositor
     }
 
     @Override
-    public List<GuidelineSummary> findAllByCompanyId(Long companyId, Long cursorId, int limit) {
+    public List<GuidelineSummary> findAllByCompanyId(Long companyId, String query, Long cursorId, int limit) {
         return queryFactory
                 .selectFrom(summary)
                 .join(summary.guideline, guideline).fetchJoin()
                 .where(
                         guideline.company.id.eq(companyId),
+                        searchCondition(query),
                         cursorCondition(cursorId)
                 )
                 .orderBy(summary.id.desc())
@@ -44,5 +45,14 @@ public class GuidelineSummaryRepositoryImpl implements GuidelineSummaryRepositor
 
     private BooleanExpression cursorCondition(Long cursorId) {
         return cursorId != null ? summary.id.lt(cursorId) : null;
+    }
+
+    private BooleanExpression searchCondition(String query) {
+        if (query == null || query.isBlank())
+            return null;
+
+        return guideline.guidelineId.containsIgnoreCase(query)
+                .or(summary.title.containsIgnoreCase(query))
+                .or(summary.productName.containsIgnoreCase(query));
     }
 }

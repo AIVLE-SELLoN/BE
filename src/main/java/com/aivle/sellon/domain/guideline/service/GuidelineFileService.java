@@ -31,10 +31,12 @@ public class GuidelineFileService {
     private final GuidelineRegenerationService guidelineRegenerationService;
     private final CursorUtils cursorUtils;
 
-    public CursorPageResponse<GuidelineFileResponse> getFiles(UserPrincipal principal, String cursor, int size) {
+    public CursorPageResponse<GuidelineFileResponse> getFiles(
+            UserPrincipal principal, String cursor, int size, String query
+    ) {
         Long cursorId = cursorUtils.toId(cursor);
         List<Guideline> guidelines = guidelineRepository
-                .findAllWithFileByCompanyId(principal.getCompanyId(), cursorId, size + 1);
+                .findAllWithFileByCompanyId(principal.getCompanyId(), query, cursorId, size + 1);
 
         boolean hasNext = guidelines.size() > size;
         List<Guideline> content = hasNext ? guidelines.subList(0, size) : guidelines;
