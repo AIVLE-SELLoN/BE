@@ -81,7 +81,12 @@ public class CsInquiryService {
     @Transactional
     public CsInquiryResponse answerInquiry(Long inquireKey, CsAnswerRequest request) {
         CsInquiry inquiry = csInquiryRepository.findById(inquireKey)
-            .orElseThrow(CsInquiryNotFoundException::new);
+                .filter(i -> i.getDeletedAt() == null)
+                .orElseThrow(CsInquiryNotFoundException::new);
+
+        if (inquiry.isAnswered())
+            throw new CsInquiryAlreadyAnsweredException();
+
         inquiry.answer(request.inquireAnswer());
         return toResponse(inquiry);
     }
