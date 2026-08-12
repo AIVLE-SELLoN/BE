@@ -13,6 +13,10 @@ public enum ConfidenceLevel {
         this.koreanValue = koreanValue;
     }
 
+    public String koreanValue() {
+        return koreanValue;
+    }
+
     public static ConfidenceLevel fromKorean(String koreanValue) {
         if (koreanValue == null) return null;
         return Arrays.stream(values())

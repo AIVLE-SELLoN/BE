@@ -11,4 +11,11 @@ public enum ProposalType {
             default -> throw new IllegalArgumentException("알 수 없는 proposal type 값: " + value);
         };
     }
+
+    public String toJson() {
+        return switch (this) {
+            case COPY_DRAFT -> "copy_draft";
+            case IMAGE_GUIDE -> "image_guide";
+        };
+    }
 }

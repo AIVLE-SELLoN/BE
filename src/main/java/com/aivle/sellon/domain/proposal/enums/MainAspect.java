@@ -16,6 +16,10 @@ public enum MainAspect {
         this.koreanValue = koreanValue;
     }
 
+    public String koreanValue() {
+        return koreanValue;
+    }
+
     public static MainAspect fromKorean(String koreanValue) {
         return Arrays.stream(values())
                 .filter(v -> v.koreanValue.equals(koreanValue))

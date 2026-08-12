@@ -17,4 +17,11 @@ public class ProposalProductDescriptionApplier {
             proposal.getRootUser(), companyId, proposal.getProductGroupId(), proposal.getChannel().name(), description
         );
     }
+
+    public String findCurrentDescription(Proposal proposal, Long companyId) {
+        if (proposal.getProductGroupId() == null || proposal.getChannel() == null) return null;
+        return productDescriptionService
+            .findDescription(companyId, proposal.getProductGroupId(), proposal.getChannel().name())
+            .orElse(null);
+    }
 }

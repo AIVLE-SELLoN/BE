@@ -7,11 +7,13 @@ import com.aivle.sellon.domain.proposal.dto.response.ProposalAcceptHistoryRespon
 import com.aivle.sellon.domain.proposal.dto.response.ProposalDetailResponse;
 import com.aivle.sellon.domain.proposal.entity.Proposal;
 import com.aivle.sellon.domain.proposal.entity.ProposalAcceptHistory;
+import com.aivle.sellon.domain.proposal.entity.ProposalEvidence;
 import com.aivle.sellon.domain.proposal.enums.HitlStatus;
 import com.aivle.sellon.domain.proposal.event.ProposalReviewEventPublisher;
 import com.aivle.sellon.domain.proposal.event.ProposalReviewedEvent;
 import com.aivle.sellon.domain.proposal.exception.ProposalNotFoundException;
 import com.aivle.sellon.domain.proposal.repository.ProposalAcceptHistoryRepository;
+import com.aivle.sellon.domain.proposal.repository.ProposalEvidenceRepository;
 import com.aivle.sellon.domain.proposal.repository.ProposalRepository;
 import com.aivle.sellon.domain.proposal.service.support.ProposalAccessGuard;
 import com.aivle.sellon.domain.proposal.service.support.ProposalProductDescriptionApplier;
@@ -21,14 +23,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-// 셀러의 개선안 검토 액션(재요청/승인/반려) — feedback.recommendation.reviewed 발행까지 담당.
 @Service
 @RequiredArgsConstructor
 public class ProposalReviewService {
 
     private final ProposalRepository proposalRepository;
     private final ProposalAcceptHistoryRepository proposalAcceptHistoryRepository;
+    private final ProposalEvidenceRepository proposalEvidenceRepository;
     private final ProposalReviewEventPublisher proposalReviewEventPublisher;
     private final ProposalProductDescriptionApplier productDescriptionApplier;
     private final ProposalAccessGuard accessGuard;
@@ -65,18 +68,19 @@ public class ProposalReviewService {
         boolean isEdited = request.improvedContent() != null && !request.improvedContent().isBlank();
         HitlStatus hitlStatus = isEdited ? HitlStatus.EDITED_APPROVED : HitlStatus.APPROVED;
 
+        String prevContent = productDescriptionApplier.findCurrentDescription(proposal, companyId);
+
         ProposalAcceptHistory history = ProposalAcceptHistory.ofAccept(
             proposal,
             hitlStatus,
             proposal.getProposedContent(),
             request.improvedContent(),
-            request.improvedPrevContent(),
+            prevContent,
             request.processedBy()
         );
         proposalAcceptHistoryRepository.save(history);
         proposal.markReviewed(hitlStatus);
 
-        // 실제 반영 — 수정 문구가 있으면 그걸, 없으면 AI 제안 원문을 상품 설명에 저장한다.
         String appliedText = isEdited ? request.improvedContent() : proposal.getProposedContent();
         productDescriptionApplier.apply(proposal, companyId, appliedText);
 
@@ -117,8 +121,6 @@ public class ProposalReviewService {
         ));
     }
 
-    // mq_events.md §8 — recommendation_id/alert_id/hitl_status/hitl_feedback 4개 최상위 필드로 발행.
-    // 승인(수정 없이)일 때는 rejectionReason이 없어 null로 둔다.
     private ProposalReviewedEvent toReviewedEvent(
         Proposal proposal,
         HitlStatus hitlStatus,
@@ -144,7 +146,42 @@ public class ProposalReviewService {
             proposal.getRecommendationId(),
             proposal.getAlertId(),
             hitlStatus,
-            hitlFeedback
+            hitlFeedback,
+            toAlertContext(proposal),
+            toRecommendationContext(proposal)
+        );
+    }
+
+    private ProposalReviewedEvent.AlertContext toAlertContext(Proposal proposal) {
+        return new ProposalReviewedEvent.AlertContext(
+            proposal.getDetectedAt(),
+            proposal.getProductGroupId(),
+            proposal.getChannel(),
+            proposal.getVerdict(),
+            proposal.getMainAspect(),
+            proposal.getRecommendedAction()
+        );
+    }
+
+    private ProposalReviewedEvent.RecommendationContext toRecommendationContext(Proposal proposal) {
+        List<ProposalEvidence> evidences = proposalEvidenceRepository.findByProposal_ReportKey(proposal.getReportKey());
+        List<ProposalReviewedEvent.RecommendationContext.Citation> citations = evidences.stream()
+            .map(e -> new ProposalReviewedEvent.RecommendationContext.Citation(e.getInquiryId(), e.getQuoteText()))
+            .toList();
+
+        return new ProposalReviewedEvent.RecommendationContext(
+            proposal.getProposalType(),
+            proposal.getTargetField(),
+            proposal.getCurrentText(),
+            proposal.getProposedContent(),
+            proposal.getRationale(),
+            proposal.isDetailpageGrounded(),
+            proposal.getConfidenceLevel(),
+            proposal.getConfidenceDescription(),
+            proposal.getSimilarCase(),
+            proposal.isCappedByDetection(),
+            proposal.isEvaluatorPassed(),
+            citations
         );
     }
 }

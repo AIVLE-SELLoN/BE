@@ -46,8 +46,6 @@ public class ProposalHistoryService {
             .toList();
     }
 
-    // "되돌리기" — 승인(APPROVED/EDITED_APPROVED) 이력만 실제 반영 대상이 있다. improvedPrevContent가
-    // 그 승인 시점 "적용 전" 값이라 그걸로 상품 설명을 되돌린다. 반려 이력은 반영한 적이 없어 대상이 없다.
     @Transactional
     public ProposalAcceptHistoryResponse rollbackAcceptHistory(Long historyKey, Long companyId) {
         ProposalAcceptHistory history = proposalAcceptHistoryRepository.findById(historyKey)

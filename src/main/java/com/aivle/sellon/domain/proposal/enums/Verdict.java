@@ -15,6 +15,10 @@ public enum Verdict {
         this.koreanValue = koreanValue;
     }
 
+    public String koreanValue() {
+        return koreanValue;
+    }
+
     public static Verdict fromKorean(String koreanValue) {
         return Arrays.stream(values())
                 .filter(v -> v.koreanValue.equals(koreanValue))
