@@ -119,8 +119,8 @@ public class DetectionAlert extends BaseEntity {
     @Column(nullable = false)
     private AlertStatus alertStatus;
 
-    @Column(columnDefinition = "TEXT")
-    private String channelBreakdownSnapshot;
+    @Column(name = "channel_rates", columnDefinition = "TEXT")
+    private String channelRates;
 
     private DetectionAlert(String alertCode, Company company) {
         this.alertCode = alertCode;
@@ -136,12 +136,12 @@ public class DetectionAlert extends BaseEntity {
                                         AlertRootCause rootCause, DetectionConfidence detectionConfidence,
                                         boolean scopeIn, RecommendedAction recommendedAction,
                                         String evidenceInquiryIds, String linkedChangeId,
-                                        String channelBreakdownSnapshot) {
+                                        String channelRates) {
         DetectionAlert detectionAlert = new DetectionAlert(alertCode, company);
         detectionAlert.update(detectedAt, updatesAlertCode, productGroupId, channel, windowStart, windowEnd,
                 verdict, significantChannels, excludedChannels, mainAspect, subAspects, stats, sourceSignals,
                 rootCause, detectionConfidence, scopeIn, recommendedAction, evidenceInquiryIds, linkedChangeId,
-                channelBreakdownSnapshot);
+                channelRates);
         return detectionAlert;
     }
 
@@ -151,7 +151,7 @@ public class DetectionAlert extends BaseEntity {
                        AlertStats stats, String sourceSignals, AlertRootCause rootCause,
                        DetectionConfidence detectionConfidence, boolean scopeIn, RecommendedAction recommendedAction,
                        String evidenceInquiryIds, String linkedChangeId,
-                       String channelBreakdownSnapshot) {
+                       String channelRates) {
         this.detectedAt = detectedAt;
         this.updatesAlertCode = updatesAlertCode;
         this.productGroupId = productGroupId;
@@ -171,6 +171,6 @@ public class DetectionAlert extends BaseEntity {
         this.recommendedAction = recommendedAction;
         this.evidenceInquiryIds = evidenceInquiryIds;
         this.linkedChangeId = linkedChangeId;
-        this.channelBreakdownSnapshot = channelBreakdownSnapshot;
+        this.channelRates = channelRates;
     }
 }

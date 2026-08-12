@@ -15,6 +15,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,10 +24,16 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@Table(indexes = {
-        @Index(name = "idx_notification_company_is_read", columnList = "company_id, is_read"),
-        @Index(name = "idx_notification_notified_at", columnList = "notified_at")
-})
+@Table(
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_notification_target",
+                columnNames = {"type", "notification_target_id"}
+        ),
+        indexes = {
+                @Index(name = "idx_notification_company_is_read", columnList = "company_id, is_read"),
+                @Index(name = "idx_notification_notified_at", columnList = "notified_at")
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification extends BaseEntity {
 
@@ -54,9 +61,10 @@ public class Notification extends BaseEntity {
     @Column(nullable = false)
     private Long notificationTargetId;
 
-    private Notification(Company company, String message, LocalDateTime notifiedAt, Long notificationTargetId) {
+    private Notification(Company company, NotificationType type, String message, LocalDateTime notifiedAt,
+                         Long notificationTargetId) {
         this.company = company;
-        this.type = NotificationType.ANOMALY_DETECTED;
+        this.type = type;
         this.message = message;
         this.notifiedAt = notifiedAt;
         this.isRead = false;
@@ -65,7 +73,7 @@ public class Notification extends BaseEntity {
 
     public static Notification createForAlert(Company company, String message, LocalDateTime notifiedAt,
                                               Long detectionAlertId) {
-        return new Notification(company, message, notifiedAt, detectionAlertId);
+        return new Notification(company, NotificationType.ANOMALY_DETECTED, message, notifiedAt, detectionAlertId);
     }
 
     public void markAsRead() {

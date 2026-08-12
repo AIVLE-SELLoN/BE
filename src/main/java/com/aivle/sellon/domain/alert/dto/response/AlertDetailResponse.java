@@ -12,6 +12,7 @@ import com.aivle.sellon.domain.alert.enums.StatsSource;
 import com.aivle.sellon.domain.alert.enums.Verdict;
 import com.aivle.sellon.domain.notification.entity.Notification;
 import com.aivle.sellon.domain.notification.enums.NotificationType;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -48,7 +49,7 @@ public record AlertDetailResponse(
             String productGroupId,
             AlertChannel channel,
             Aspect mainAspect,
-            List<Object> subAspects,
+            List<SubAspectResponse> subAspects,
             LocalDate windowStart,
             LocalDate windowEnd,
             Verdict verdict,
@@ -60,12 +61,14 @@ public record AlertDetailResponse(
             RootCauseResponse rootCause,
             List<Object> significantChannels,
             List<Object> excludedChannels,
+            List<ChannelRateResponse> channelRates,
             SourceSignalsResponse sourceSignals,
             List<Object> evidenceInquiryIds,
             String linkedChangeId
     ) {
-        public static AlertResponse of(DetectionAlert alert, List<Object> subAspects,
+        public static AlertResponse of(DetectionAlert alert, List<SubAspectResponse> subAspects,
                                        List<Object> significantChannels, List<Object> excludedChannels,
+                                       List<ChannelRateResponse> channelRates,
                                        SourceSignalsResponse sourceSignals, List<Object> evidenceInquiryIds) {
             return new AlertResponse(
                     alert.getAlertCode(),
@@ -86,6 +89,7 @@ public record AlertDetailResponse(
                     RootCauseResponse.of(alert.getRootCause()),
                     significantChannels,
                     excludedChannels,
+                    channelRates,
                     sourceSignals,
                     evidenceInquiryIds,
                     alert.getLinkedChangeId()
@@ -97,6 +101,21 @@ public record AlertDetailResponse(
             Boolean cs,
             Boolean review,
             String interpretation
+    ) {
+    }
+
+    public record ChannelRateResponse(
+            String channel,
+            BigDecimal rate,
+            Boolean excluded,
+            Integer total
+    ) {
+    }
+
+    public record SubAspectResponse(
+            Aspect aspect,
+            BigDecimal delta,
+            @JsonAlias("recommended_action") RecommendedAction recommendedAction
     ) {
     }
 
