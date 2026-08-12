@@ -7,6 +7,7 @@ import com.aivle.sellon.domain.report.dto.message.MonthlyReportPayload;
 import com.aivle.sellon.domain.report.dto.response.ReportResponse;
 import com.aivle.sellon.domain.report.entity.Report;
 import com.aivle.sellon.domain.report.event.ReportGeneratedEvent;
+import com.aivle.sellon.domain.report.exception.ReportNotFoundException;
 import com.aivle.sellon.domain.report.repository.ReportRepository;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,14 @@ public class ReportService {
         return reportRepository.findAllByCompanyId(principal.getCompanyId()).stream()
                 .map(report -> ReportResponse.of(report, reportDownloadUrlService.generate(report.getPdfS3Meta())))
                 .toList();
+    }
+
+    // 프론트는 status로 분기한다: SUCCESS면 월간 리포트 화면을, FAILED_*면 noticeMessage로 오류 화면을 띄운다
+    public ReportResponse getReport(UserPrincipal principal, String reportId) {
+        Report report = reportRepository.findByCompanyIdAndReportId(principal.getCompanyId(), reportId)
+                .orElseThrow(ReportNotFoundException::new);
+
+        return ReportResponse.of(report, reportDownloadUrlService.generate(report.getPdfS3Meta()));
     }
 
     @Transactional

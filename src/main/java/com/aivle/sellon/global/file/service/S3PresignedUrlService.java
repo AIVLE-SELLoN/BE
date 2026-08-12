@@ -32,7 +32,8 @@ public class S3PresignedUrlService {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
-                .responseContentDisposition(contentDisposition(fileName))
+                .responseContentType("application/pdf")
+                .responseContentDisposition("inline")
                 .build();
 
         return presign(getObjectRequest, expiration);
