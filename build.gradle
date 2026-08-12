@@ -52,7 +52,8 @@ dependencies {
 	// Mail
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 
-	// Apache Kafka
+	// Apache Kafka (채널 유입 전용 - 목 프로듀서 -> 메인서버)
+	implementation 'org.springframework.kafka:spring-kafka'
 
 	// RabbitMQ
 	implementation 'org.springframework.boot:spring-boot-starter-amqp'
@@ -74,6 +75,9 @@ dependencies {
 
 	// Swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
+
+	// CSV (채널 상품 매칭 배치 export/import)
+	implementation 'org.apache.commons:commons-csv:1.11.0'
 
 }
 

@@ -29,6 +29,14 @@ spring:
     token:
       expire: 1800000
 
+  # 채널 유입 전용 (목 프로듀서 -> 메인서버). AI 결과 전달(RabbitMQ)과는 별개 구간.
+  kafka:
+    consumer:
+      group-id: sellon-channel-ingest
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
   # 리스너 재시도 정책 (환경 무관 공통). 기본 컨테이너 팩토리에 적용되므로
   # containerFactory를 따로 지정하지 않은 모든 @RabbitListener가 이 설정을 따른다.
   rabbitmq:
@@ -40,6 +48,11 @@ spring:
           initial-interval: 2s
           multiplier: 1.0       # 고정 간격 (지수 증가 없음)
           max-interval: 2s
+
+# AI 서비스(Agent1/2/3, FastAPI)는 로컬/배포 모두 URL 형식이 같아 프로필 공통으로 둔다.
+# 로컬 기본값은 AI 서비스 로컬 실행 포트(uvicorn app.main:app --reload 기준 8000).
+ai-service:
+  base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
 
 # OpenSearch는 로컬/배포 모두 환경변수로만 접속하는 구조라 프로필 공통으로 둔다
 aws:
