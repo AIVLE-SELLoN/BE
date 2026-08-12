@@ -13,6 +13,7 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.util.Map;
 
 @Configuration
 @EnableJpaRepositories(
@@ -41,6 +42,7 @@ public class RawDataSourceConfig {
                 .dataSource(rawDbDataSource())
                 .packages("com.aivle.sellon.rawdb.entity")
                 .persistenceUnit("rawDb")
+                .properties(Map.of("hibernate.hbm2ddl.auto", "validate"))
                 .build();
     }
 
