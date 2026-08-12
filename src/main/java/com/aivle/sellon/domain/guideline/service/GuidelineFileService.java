@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -34,9 +35,9 @@ public class GuidelineFileService {
     public CursorPageResponse<GuidelineFileResponse> getFiles(
             UserPrincipal principal, String cursor, int size, String query
     ) {
-        Long cursorId = cursorUtils.toId(cursor);
+        LocalDateTime cursorCreatedAt = cursorUtils.toLocalDateTime(cursor);
         List<Guideline> guidelines = guidelineRepository
-                .findAllWithFileByCompanyId(principal.getCompanyId(), query, cursorId, size + 1);
+                .findAllWithFileByCompanyId(principal.getCompanyId(), query, cursorCreatedAt, size + 1);
 
         boolean hasNext = guidelines.size() > size;
         List<Guideline> content = hasNext ? guidelines.subList(0, size) : guidelines;
@@ -45,7 +46,9 @@ public class GuidelineFileService {
                 .map(guideline -> GuidelineFileResponse.of(guideline, resolveAvailability(guideline)))
                 .toList();
 
-        String nextCursor = hasNext ? cursorUtils.toCursor(content.get(content.size() - 1).getId()) : null;
+        String nextCursor = hasNext
+                ? cursorUtils.toCursor(content.get(content.size() - 1).getPdfS3Meta().getCreatedAt())
+                : null;
 
         return new CursorPageResponse<>(files, nextCursor, hasNext);
     }

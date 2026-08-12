@@ -49,9 +49,9 @@ public class GuidelineService {
     public CursorPageResponse<GuidelineListItemResponse> getGuidelines(
             UserPrincipal principal, String cursor, int size, String query
     ) {
-        Long cursorId = cursorUtils.toId(cursor);
+        LocalDateTime cursorCreatedAt = cursorUtils.toLocalDateTime(cursor);
         List<GuidelineSummary> summaries = guidelineSummaryRepository
-                .findAllByCompanyId(principal.getCompanyId(), query, cursorId, size + 1);
+                .findAllByCompanyId(principal.getCompanyId(), query, cursorCreatedAt, size + 1);
 
         boolean hasNext = summaries.size() > size;
         List<GuidelineSummary> content = hasNext ? summaries.subList(0, size) : summaries;
@@ -60,7 +60,9 @@ public class GuidelineService {
                 .map(summary -> GuidelineListItemResponse.of(summary, resolveAvailability(summary.getGuideline())))
                 .toList();
 
-        String nextCursor = hasNext ? cursorUtils.toCursor(content.get(content.size() - 1).getId()) : null;
+        String nextCursor = hasNext
+                ? cursorUtils.toCursor(content.get(content.size() - 1).getGuideline().getCreatedDate())
+                : null;
 
         return new CursorPageResponse<>(items, nextCursor, hasNext);
     }
