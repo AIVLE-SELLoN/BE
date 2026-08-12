@@ -1,0 +1,55 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sellon
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password:
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  mail:
+    host: localhost
+    port: 1025
+    username: test
+    password: test
+    from: sellon_info@sellon.site
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        prefetch: 20
+
+report:
+  download-url:
+    expire: 604800000
+  mail:
+    scheduler-cron: "0 */10 * * * *"
+
+cloud:
+  aws:
+    region: ap-northeast-2
+    opensearch:
+      enabled: false
+    s3:
+      report:
+        bucket: sellon-reports-test
+        access-key: test
+        secret-key: test
+      image:
+        bucket: sellon-images-test
+        access-key: test
+        secret-key: test
+
+raw-db:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/raw_db
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password:
