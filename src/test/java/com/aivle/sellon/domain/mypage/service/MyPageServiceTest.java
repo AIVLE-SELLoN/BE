@@ -328,7 +328,7 @@ class MyPageServiceTest {
         when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
 
         List<RecipientRequest> recipients = IntStream.range(0, 21)
-                .mapToObj(i -> new RecipientRequest(null, RecipientDepartment.CS, "user" + i + "@example.com"))
+                .mapToObj(i -> new RecipientRequest(null, RecipientDepartment.OPERATIONS, "user" + i + "@example.com"))
                 .toList();
         ReportSettingRequest reportSettingRequest = new ReportSettingRequest(true, 1, LocalTime.of(9, 0), recipients);
         MyPageUpdateRequest request = new MyPageUpdateRequest(null, null, null, reportSettingRequest);
@@ -365,7 +365,8 @@ class MyPageServiceTest {
         when(monthlyReportRecipientRepository.findAllByCompanyIdAndDeletedAtIsNullOrderByIdAsc(any()))
                 .thenReturn(List.of());
 
-        List<RecipientRequest> recipients = List.of(new RecipientRequest(999L, RecipientDepartment.OPERATIONS, "mkt@example.com"));
+        List<RecipientRequest> recipients = List.of(
+                new RecipientRequest(999L, RecipientDepartment.OPERATIONS, "mkt@example.com"));
         ReportSettingRequest reportSettingRequest = new ReportSettingRequest(true, 1, LocalTime.of(9, 0), recipients);
         MyPageUpdateRequest request = new MyPageUpdateRequest(null, null, null, reportSettingRequest);
 
@@ -383,7 +384,8 @@ class MyPageServiceTest {
         MonthlyReportSetting setting = MonthlyReportSetting.create(company, true, 1, LocalTime.of(9, 0));
         when(monthlyReportSettingRepository.findByCompanyIdAndDeletedAtIsNull(any())).thenReturn(Optional.of(setting));
 
-        MonthlyReportRecipient existingRecipient = MonthlyReportRecipient.create(company, RecipientDepartment.OPERATIONS, "mkt@example.com");
+        MonthlyReportRecipient existingRecipient = MonthlyReportRecipient.create(
+                company, RecipientDepartment.OPERATIONS, "mkt@example.com");
         ReflectionTestUtils.setField(existingRecipient, "id", 1L);
         when(monthlyReportRecipientRepository.findAllByCompanyIdAndDeletedAtIsNullOrderByIdAsc(any()))
                 .thenReturn(List.of(existingRecipient));
@@ -492,7 +494,8 @@ class MyPageServiceTest {
         MonthlyReportSetting setting = MonthlyReportSetting.create(company, false, 1, LocalTime.of(9, 0));
         when(monthlyReportSettingRepository.findByCompanyIdAndDeletedAtIsNull(any())).thenReturn(Optional.of(setting));
 
-        MonthlyReportRecipient existingRecipient = MonthlyReportRecipient.create(company, RecipientDepartment.OPERATIONS, "old@example.com");
+        MonthlyReportRecipient existingRecipient = MonthlyReportRecipient.create(
+                company, RecipientDepartment.OPERATIONS, "old@example.com");
         ReflectionTestUtils.setField(existingRecipient, "id", 1L);
         when(monthlyReportRecipientRepository.findAllByCompanyIdAndDeletedAtIsNullOrderByIdAsc(any()))
                 .thenReturn(List.of(existingRecipient));
