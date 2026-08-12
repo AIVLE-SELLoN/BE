@@ -43,12 +43,12 @@ public class ProposalController {
     }
 
     @PostMapping("/{reportKey}/regenerate")
-    public ResponseEntity<ProposalDetailResponse> regenerateProposal(
+    public ResponseEntity<ProposalAcceptHistoryResponse> regenerateProposal(
         @PathVariable Long reportKey,
         @RequestBody ProposalRegenerateRequest request,
         @AuthenticationPrincipal UserPrincipal principal
     ) {
-        ProposalDetailResponse response = proposalReviewService.regenerateProposal(reportKey, request, principal.getCompanyId());
+        ProposalAcceptHistoryResponse response = proposalReviewService.regenerateProposal(reportKey, request, principal.getCompanyId());
         return ResponseEntity.ok(response);
     }
 

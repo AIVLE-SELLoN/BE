@@ -4,7 +4,6 @@ import com.aivle.sellon.domain.proposal.dto.request.ProposalAcceptRequest;
 import com.aivle.sellon.domain.proposal.dto.request.ProposalRegenerateRequest;
 import com.aivle.sellon.domain.proposal.dto.request.ProposalRejectRequest;
 import com.aivle.sellon.domain.proposal.dto.response.ProposalAcceptHistoryResponse;
-import com.aivle.sellon.domain.proposal.dto.response.ProposalDetailResponse;
 import com.aivle.sellon.domain.proposal.entity.Proposal;
 import com.aivle.sellon.domain.proposal.entity.ProposalAcceptHistory;
 import com.aivle.sellon.domain.proposal.entity.ProposalEvidence;
@@ -38,25 +37,25 @@ public class ProposalReviewService {
     private final ProposalResponseMapper responseMapper;
 
 
+    // 분석 재요청 — 반려와 동일하게 이력을 남긴다(reject와 구분 컬럼은 없음, 둘 다 REJECTED 이력으로 쌓임).
     @Transactional
-    public ProposalDetailResponse regenerateProposal(Long reportKey, ProposalRegenerateRequest request, Long companyId) {
+    public ProposalAcceptHistoryResponse regenerateProposal(Long reportKey, ProposalRegenerateRequest request, Long companyId) {
         Proposal proposal = proposalRepository.findById(reportKey)
             .orElseThrow(ProposalNotFoundException::new);
         accessGuard.requireCompanyAccess(proposal, companyId);
 
-        proposal.markReviewed(HitlStatus.REJECTED);
-
-        proposalReviewEventPublisher.publish(toReviewedEvent(
+        ProposalAcceptHistory history = ProposalAcceptHistory.ofReject(
             proposal,
-            HitlStatus.REJECTED,
-            request.processedBy(),
-            LocalDateTime.now(),
             request.reasonCode(),
             request.reasonText(),
-            null
-        ));
+            request.processedBy()
+        );
+        proposalAcceptHistoryRepository.save(history);
+        proposal.markReviewed(HitlStatus.REJECTED);
 
-        return responseMapper.toDetailResponse(proposal);
+        publishReviewedEvent(proposal, history);
+
+        return responseMapper.toResponse(history);
     }
 
     @Transactional
