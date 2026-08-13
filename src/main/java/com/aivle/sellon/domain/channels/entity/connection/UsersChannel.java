@@ -12,9 +12,16 @@ import lombok.NoArgsConstructor;
  * 회사가 특정 채널(쿠팡/지그재그/네이버 등)에 연동한 기록.
  * 채널 연동은 회사 단위 리소스라 company로 테넌트를 구분한다(같은 회사면 ROOT/MEMBER 누구나 조회 가능).
  * 연동 자체는 ROOT 권한을 가진 계정만 수행할 수 있다 (ChannelService에서 검증).
+ * (company_id, channel_type) 조합은 유니크해야 한다 - 동시 연동 요청으로 인한 중복 행 생성을 DB 레벨에서 방지.
  */
 @Entity
-@Table(name = "users_channel")
+@Table(
+        name = "users_channel",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_users_channel_company_channel_type",
+                columnNames = {"company_id", "channel_type"}
+        )
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UsersChannel extends BaseEntity {

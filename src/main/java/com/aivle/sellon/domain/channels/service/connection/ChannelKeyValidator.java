@@ -10,7 +10,7 @@ public class ChannelKeyValidator {
 
     // TODO: 실제 발급 규칙 확정되면 접두사/길이 재확인 필요
     public boolean validateFormat(String channelType, String channelCode) {
-        if (channelCode == null) {
+        if (channelType == null || channelCode == null) {
             return false;
         }
         return switch (channelType) {

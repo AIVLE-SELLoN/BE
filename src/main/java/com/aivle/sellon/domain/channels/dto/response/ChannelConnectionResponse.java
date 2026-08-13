@@ -6,19 +6,13 @@ import com.aivle.sellon.domain.channels.enums.ConnectionStatus;
 public record ChannelConnectionResponse(
         Long usersChannelKey,
         String channelType,
-        ConnectionStatus connectionStatus,
-        String failReason
+        ConnectionStatus connectionStatus
 ) {
     public static ChannelConnectionResponse from(UsersChannel usersChannel) {
         return new ChannelConnectionResponse(
                 usersChannel.getUsersChannelKey(),
                 usersChannel.getChannelType(),
-                usersChannel.getConnectionStatus(),
-                null
+                usersChannel.getConnectionStatus()
         );
-    }
-
-    public static ChannelConnectionResponse failed(String channelType, String failReason) {
-        return new ChannelConnectionResponse(null, channelType, ConnectionStatus.DISCONNECTED, failReason);
     }
 }

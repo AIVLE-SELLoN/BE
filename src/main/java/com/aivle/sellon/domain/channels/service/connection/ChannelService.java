@@ -5,12 +5,16 @@ import com.aivle.sellon.domain.channels.dto.response.ChannelConnectionResponse;
 import com.aivle.sellon.domain.channels.entity.connection.UsersChannel;
 import com.aivle.sellon.domain.channels.enums.ConnectionStatus;
 import com.aivle.sellon.domain.channels.exception.connection.ChannelConnectNotAllowedException;
+import com.aivle.sellon.domain.channels.exception.connection.ChannelKeyFormatInvalidException;
+import com.aivle.sellon.domain.channels.exception.connection.NaverOAuthFailedException;
+import com.aivle.sellon.domain.channels.exception.connection.NaverOAuthStateInvalidException;
 import com.aivle.sellon.domain.channels.repository.connection.UsersChannelRepository;
 import com.aivle.sellon.domain.company.entity.Company;
 import com.aivle.sellon.domain.company.repository.CompanyRepository;
 import com.aivle.sellon.domain.user.enums.Role;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,13 +46,10 @@ public class ChannelService {
         requireRoot(principal);
 
         if (!channelKeyValidator.validateFormat(request.channelType(), request.channelCode())) {
-            return ChannelConnectionResponse.failed(request.channelType(), "채널 키 형식이 올바르지 않습니다.");
+            throw new ChannelKeyFormatInvalidException();
         }
 
-        Company company = companyRepository.getReferenceById(principal.getCompanyId());
-        UsersChannel usersChannel = usersChannelRepository
-                .findByCompany_IdAndChannelType(principal.getCompanyId(), request.channelType())
-                .orElseGet(() -> UsersChannel.of(company, request.channelType(), request.channelCode()));
+        UsersChannel usersChannel = findOrCreate(principal.getCompanyId(), request.channelType(), request.channelCode());
         usersChannel.updateChannelCode(request.channelCode());
         usersChannel.updateStatus(ConnectionStatus.CONNECTED);
         usersChannelRepository.save(usersChannel);
@@ -68,23 +69,39 @@ public class ChannelService {
     public ChannelConnectionResponse naverCallback(String code, String state) {
         Long companyId = naverOAuthStateStore.remove(state);
         if (companyId == null) {
-            return ChannelConnectionResponse.failed("NAVER", "유효하지 않은 인증 상태입니다.");
+            throw new NaverOAuthStateInvalidException();
         }
 
         MockNaverOAuthClient.TokenResult tokenResult = mockNaverOAuthClient.exchangeToken(code);
         if (tokenResult == null) {
-            return ChannelConnectionResponse.failed("NAVER", "네이버 인증에 실패했습니다.");
+            throw new NaverOAuthFailedException();
         }
 
-        Company company = companyRepository.getReferenceById(companyId);
-        UsersChannel usersChannel = usersChannelRepository
-                .findByCompany_IdAndChannelType(companyId, "NAVER")
-                .orElseGet(() -> UsersChannel.of(company, "NAVER", tokenResult.accountId()));
+        UsersChannel usersChannel = findOrCreate(companyId, "NAVER", tokenResult.accountId());
         usersChannel.updateChannelCode(tokenResult.accountId());
         usersChannel.updateStatus(ConnectionStatus.CONNECTED);
         usersChannelRepository.save(usersChannel);
 
         return ChannelConnectionResponse.from(usersChannel);
+    }
+
+    /**
+     * (company, channelType) 조합을 잠금 조회 후 없으면 새로 만든다.
+     * 동시에 같은 조합으로 연동 요청이 들어와도, 한쪽이 먼저 커밋되면 DB 유니크 제약
+     * (uk_users_channel_company_channel_type)에 걸려 다른 쪽은 예외가 나는데,
+     * 그 경우 새로 만들려 하지 않고 방금 생성된 행을 다시 조회해 그대로 사용한다.
+     */
+    private UsersChannel findOrCreate(Long companyId, String channelType, String channelCode) {
+        return usersChannelRepository.findWithLockByCompany_IdAndChannelType(companyId, channelType)
+                .orElseGet(() -> {
+                    try {
+                        Company company = companyRepository.getReferenceById(companyId);
+                        return usersChannelRepository.save(UsersChannel.of(company, channelType, channelCode));
+                    } catch (DataIntegrityViolationException e) {
+                        return usersChannelRepository.findByCompany_IdAndChannelType(companyId, channelType)
+                                .orElseThrow(() -> e);
+                    }
+                });
     }
 
     private void requireRoot(UserPrincipal principal) {
