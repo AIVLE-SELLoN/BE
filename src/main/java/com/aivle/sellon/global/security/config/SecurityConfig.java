@@ -71,6 +71,7 @@ public class SecurityConfig {
                         // 우리 서비스의 Bearer JWT를 들고 올 수 없다 - state 파라미터로 회사를 식별한다.
                         .requestMatchers(HttpMethod.GET, "/channels/naver/callback")
                         .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
                         .requestMatchers(PERMIT_ALL_PATHS).permitAll()
                         .anyRequest().authenticated()
                 )

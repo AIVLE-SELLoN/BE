@@ -62,4 +62,15 @@ public class PdfS3Meta {
         return new PdfS3Meta(companyId, companyName, s3BucketName, s3FilePath, originalFileName, newFileName,
                 s3FullKey, fileSizeBytes, presignedUrl, createdAt, presignedExpiresAt, objectExpiresAt);
     }
+
+    /**
+     * 보관 기한이 지나 다시 만든 파일을 가리키는 메타를 새로 만든다.
+     * 사용자에게 보이는 원본 파일명과 저장 위치는 그대로 두고, 실제 객체를 가리키는 값과 시각만 갱신한다.
+     * presigned URL은 조회 시점마다 다시 발급하므로 굳이 채우지 않는다.
+     */
+    public PdfS3Meta withRegeneratedFile(String newFileName, String s3FullKey, long fileSizeBytes,
+                                          LocalDateTime createdAt, LocalDateTime objectExpiresAt) {
+        return new PdfS3Meta(companyId, companyName, s3BucketName, s3FilePath, originalFileName, newFileName,
+                s3FullKey, fileSizeBytes, null, createdAt, null, objectExpiresAt);
+    }
 }
