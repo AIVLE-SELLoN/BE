@@ -6,13 +6,11 @@ import com.aivle.sellon.domain.proposal.dto.request.ProposalRejectRequest;
 import com.aivle.sellon.domain.proposal.dto.response.ProposalAcceptHistoryResponse;
 import com.aivle.sellon.domain.proposal.entity.Proposal;
 import com.aivle.sellon.domain.proposal.entity.ProposalAcceptHistory;
-import com.aivle.sellon.domain.proposal.entity.ProposalEvidence;
 import com.aivle.sellon.domain.proposal.enums.HitlStatus;
 import com.aivle.sellon.domain.proposal.event.ProposalReviewEventPublisher;
 import com.aivle.sellon.domain.proposal.event.ProposalReviewedEvent;
 import com.aivle.sellon.domain.proposal.exception.ProposalNotFoundException;
 import com.aivle.sellon.domain.proposal.repository.ProposalAcceptHistoryRepository;
-import com.aivle.sellon.domain.proposal.repository.ProposalEvidenceRepository;
 import com.aivle.sellon.domain.proposal.repository.ProposalRepository;
 import com.aivle.sellon.domain.proposal.service.support.ProposalAccessGuard;
 import com.aivle.sellon.domain.proposal.service.support.ProposalProductDescriptionApplier;
@@ -22,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +27,6 @@ public class ProposalReviewService {
 
     private final ProposalRepository proposalRepository;
     private final ProposalAcceptHistoryRepository proposalAcceptHistoryRepository;
-    private final ProposalEvidenceRepository proposalEvidenceRepository;
     private final ProposalReviewEventPublisher proposalReviewEventPublisher;
     private final ProposalProductDescriptionApplier productDescriptionApplier;
     private final ProposalAccessGuard accessGuard;
@@ -146,41 +142,7 @@ public class ProposalReviewService {
             proposal.getAlertId(),
             hitlStatus,
             hitlFeedback,
-            toAlertContext(proposal),
-            toRecommendationContext(proposal)
-        );
-    }
-
-    private ProposalReviewedEvent.AlertContext toAlertContext(Proposal proposal) {
-        return new ProposalReviewedEvent.AlertContext(
-            proposal.getDetectedAt(),
-            proposal.getProductGroupId(),
-            proposal.getChannel(),
-            proposal.getVerdict(),
-            proposal.getMainAspect(),
-            proposal.getRecommendedAction()
-        );
-    }
-
-    private ProposalReviewedEvent.RecommendationContext toRecommendationContext(Proposal proposal) {
-        List<ProposalEvidence> evidences = proposalEvidenceRepository.findByProposal_ReportKey(proposal.getReportKey());
-        List<ProposalReviewedEvent.RecommendationContext.Citation> citations = evidences.stream()
-            .map(e -> new ProposalReviewedEvent.RecommendationContext.Citation(e.getInquiryId(), e.getQuoteText()))
-            .toList();
-
-        return new ProposalReviewedEvent.RecommendationContext(
-            proposal.getProposalType(),
-            proposal.getTargetField(),
-            proposal.getCurrentText(),
-            proposal.getProposedContent(),
-            proposal.getRationale(),
-            proposal.isDetailpageGrounded(),
-            proposal.getConfidenceLevel(),
-            proposal.getConfidenceDescription(),
-            proposal.getSimilarCase(),
-            proposal.isCappedByDetection(),
-            proposal.isEvaluatorPassed(),
-            citations
+            proposal.getRawPayload()
         );
     }
 }

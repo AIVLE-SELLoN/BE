@@ -21,6 +21,10 @@ public record AlertAnalyzedPayload(
         RecommendationPayload recommendation
 ) {
 
+    // @JsonNaming은 하위 타입에 상속되지 않아, 중첩 record 각각에 별도로 붙여야
+    // snake_case JSON(target_field, detailpage_grounded 등)이 정상 매핑된다.
+    // (RabbitMQ로 실제 발행해보고서야 발견된 버그 — 전에는 다 null로 조용히 깨지고 있었음)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record EvidencePayload(
             List<String> inquiryIds,
             String linkedChangeId
@@ -28,6 +32,7 @@ public record AlertAnalyzedPayload(
     }
 
     // recommended_action == "개선안 생성"일 때만 non-null (§4.2)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record RecommendationPayload(
             String recommendationId,
             String alertId,
@@ -42,6 +47,7 @@ public record AlertAnalyzedPayload(
     ) {
     }
 
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record ProposalPayload(
             String type,
             String targetField,
@@ -52,12 +58,14 @@ public record AlertAnalyzedPayload(
     ) {
     }
 
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record CitationPayload(
             String inquiryId,
             String quote
     ) {
     }
 
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record EvaluatorPayload(
             boolean passed,
             int attempts,
@@ -66,6 +74,7 @@ public record AlertAnalyzedPayload(
     ) {
     }
 
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record ChecksPayload(
             boolean grounding,
             boolean consistency,

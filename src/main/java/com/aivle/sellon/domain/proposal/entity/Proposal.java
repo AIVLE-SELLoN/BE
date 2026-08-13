@@ -16,8 +16,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+// alert_id 단독 유니크가 아니라 (company_id, alert_id) 복합 유니크로 회사 간 충돌을 막는다.
 @Entity
-@Table(name = "proposal")
+@Table(name = "proposal", uniqueConstraints = @UniqueConstraint(
+    name = "uk_proposal_company_alert", columnNames = {"company_id", "alert_id"}
+))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Proposal extends BaseEntity {
@@ -27,10 +30,12 @@ public class Proposal extends BaseEntity {
     @Column(name = "report_key")
     private Long reportKey;
 
-    @Column(name = "alert_id", length = 100, nullable = false, unique = true)
+    @Column(name = "company_id", nullable = false)
+    private Long companyId;
+
+    @Column(name = "alert_id", length = 100, nullable = false)
     private String alertId;
 
-    // occurredAt이 아니라 payload.detected_at을 써야 한다 (mq_events.md §3 경고)
     @Column(name = "detected_at")
     private LocalDateTime detectedAt;
 
@@ -69,7 +74,6 @@ public class Proposal extends BaseEntity {
     @Column(name = "proposed_content", length = 2000)
     private String proposedContent;
 
-    // recommendation.proposal.rationale — AI 인사이트 리포트의 "CS 문의 근거 요약"에 대응
     @Column(name = "rationale", length = 1000)
     private String rationale;
 
@@ -89,13 +93,15 @@ public class Proposal extends BaseEntity {
     @Column(name = "capped_by_detection", nullable = false)
     private boolean cappedByDetection;
 
-    // evaluator.passed — "검증된 개선안" 배지 표시 여부에 대응
     @Column(name = "evaluator_passed", nullable = false)
     private boolean evaluatorPassed;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "hitl_status", length = 20, nullable = false)
     private HitlStatus hitlStatus = HitlStatus.PENDING;
+
+    @Column(name = "raw_payload", columnDefinition = "TEXT")
+    private String rawPayload;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "root_user_id", nullable = false)
@@ -104,6 +110,7 @@ public class Proposal extends BaseEntity {
     public static Proposal of(User rootUser, String alertId) {
         Proposal entity = new Proposal();
         entity.rootUser = rootUser;
+        entity.companyId = rootUser.getCompany().getId();
         entity.alertId = alertId;
         entity.hitlStatus = HitlStatus.PENDING;
         return entity;
@@ -151,5 +158,9 @@ public class Proposal extends BaseEntity {
 
     public void markReviewed(HitlStatus hitlStatus) {
         this.hitlStatus = hitlStatus;
+    }
+
+    public void updateRawPayload(String rawPayload) {
+        this.rawPayload = rawPayload;
     }
 }

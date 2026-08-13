@@ -28,12 +28,10 @@ public class ProposalIngestService {
     private final ProposalEvidenceRepository proposalEvidenceRepository;
 
     @Transactional
-    public void ingestAnalyzedAlert(User rootUser, AlertAnalyzedPayload payload) {
-        Proposal proposal = proposalRepository.findByAlertId(payload.alertId())
+    public void ingestAnalyzedAlert(User rootUser, AlertAnalyzedPayload payload, String rawPayloadJson) {
+        Proposal proposal = proposalRepository.findByAlertIdAndCompanyId(payload.alertId(), rootUser.getCompany().getId())
             .orElseGet(() -> proposalRepository.save(Proposal.of(rootUser, payload.alertId())));
 
-        // 같은 alert_id로 재발행이 와도, 셀러가 이미 처리(승인/수정후승인/반려)한 개선안은 덮어쓰지 않는다.
-        // (AI팀 확인 요청 반영 — PENDING일 때만 분석 결과를 반영한다)
         if (proposal.getHitlStatus() != HitlStatus.PENDING) {
             log.info("이미 처리된 개선안이라 재발행 무시 - alertId={}, hitlStatus={}",
                     payload.alertId(), proposal.getHitlStatus());
@@ -71,5 +69,7 @@ public class ProposalIngestService {
                 ProposalEvidence.of(proposal, c.inquiryId(), c.quote())
             ));
         }
+
+        proposal.updateRawPayload(rawPayloadJson);
     }
 }

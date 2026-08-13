@@ -38,11 +38,8 @@ public class AlertDetectedHandler implements MqEventHandler {
 
     @Override
     public void handle(JsonNode envelope, String eventId, String traceId) {
-        // company_id는 payload 스키마에 없다. envelope 최상위에 회사 식별키(join_key)로 실려 온다.
         String companyKey = envelope.path("companyId").asString(null);
 
-        // 파싱/회사·유저 조회를 한 try에 두면 서비스 내부 예외가 MALFORMED_PAYLOAD로
-        // 오분류돼 재시도 없이 DLQ로 직행한다. 범위를 나눠 둔다.
         AlertAnalyzedPayload payload;
         try {
             payload = readPayload(envelope);
@@ -65,7 +62,8 @@ public class AlertDetectedHandler implements MqEventHandler {
             throw deadLetter(EventFailureReason.UNKNOWN_COMPANY, eventId, traceId, e);
         }
 
-        proposalIngestService.ingestAnalyzedAlert(rootUser, payload);
+        String rawPayloadJson = envelope.get("payload").toString();
+        proposalIngestService.ingestAnalyzedAlert(rootUser, payload, rawPayloadJson);
     }
 
     private AlertAnalyzedPayload readPayload(JsonNode envelope) {
@@ -93,7 +91,6 @@ public class AlertDetectedHandler implements MqEventHandler {
             throw new IllegalArgumentException("recommended_action 없음");
     }
 
-    // company_id는 DB PK가 아니라 회원가입 시 발급되는 회사 식별키(join_key)다. (ReportService.findCompany와 동일 컨벤션)
     private User findRootUser(String companyKey) {
         if (companyKey == null || companyKey.isBlank())
             throw new CompanyNotFoundException();
