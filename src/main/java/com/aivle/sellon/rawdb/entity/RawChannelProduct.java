@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
  * 물리적으로 다른 데이터소스라 JPA 연관관계 대신 usersChannelKey를 값으로만 들고 있는다.
  */
 @Entity
-@Table(name = "raw_channel_product")
+@Table(name = "products")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)

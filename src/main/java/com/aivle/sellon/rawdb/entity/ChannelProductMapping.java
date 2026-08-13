@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  * product_group_id가 비어있으면(=null) 아직 매핑 미확정(보류) 상태.
  */
 @Entity
-@Table(name = "channel_product_mapping")
+@Table(name = "mapped_data")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
