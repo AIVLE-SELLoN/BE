@@ -2,6 +2,7 @@ package com.aivle.sellon.domain.channels.controller.productmapping;
 
 import com.aivle.sellon.domain.channels.dto.response.ProductMappingReviewItemResponse;
 import com.aivle.sellon.domain.channels.service.productmapping.ProductMappingReviewService;
+import com.aivle.sellon.global.common.ApiResponse;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,18 +23,18 @@ public class ProductMappingReviewController {
     private final ProductMappingReviewService productMappingReviewService;
 
     @GetMapping
-    public ResponseEntity<List<ProductMappingReviewItemResponse>> getReviewQueue(
+    public ResponseEntity<ApiResponse<List<ProductMappingReviewItemResponse>>> getReviewQueue(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(defaultValue = "false") boolean resolved
     ) {
-        return ResponseEntity.ok(productMappingReviewService.getReviewQueue(principal.getCompanyId(), resolved));
+        return ApiResponse.ok(productMappingReviewService.getReviewQueue(principal.getCompanyId(), resolved));
     }
 
     @PatchMapping("/{reviewItemId}/resolve")
-    public ResponseEntity<ProductMappingReviewItemResponse> resolve(
+    public ResponseEntity<ApiResponse<ProductMappingReviewItemResponse>> resolve(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long reviewItemId
     ) {
-        return ResponseEntity.ok(productMappingReviewService.resolve(principal.getCompanyId(), reviewItemId));
+        return ApiResponse.ok(productMappingReviewService.resolve(principal.getCompanyId(), reviewItemId));
     }
 }

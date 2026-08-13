@@ -1,17 +1,16 @@
 package com.aivle.sellon.domain.channels.service.productmapping;
 
-import com.aivle.sellon.domain.channels.entity.productmapping.ChannelProduct;
+import com.aivle.sellon.domain.channels.entity.connection.UsersChannel;
 import com.aivle.sellon.domain.channels.entity.productmapping.MasterProduct;
 import com.aivle.sellon.domain.channels.entity.productmapping.ProductMappingReviewItem;
-import com.aivle.sellon.domain.channels.entity.connection.UsersChannel;
 import com.aivle.sellon.domain.channels.enums.MappingMethod;
-import com.aivle.sellon.domain.channels.enums.MappingStatus;
 import com.aivle.sellon.domain.channels.exception.ChannelAccessDeniedException;
 import com.aivle.sellon.domain.channels.exception.connection.UsersChannelNotFoundException;
-import com.aivle.sellon.domain.channels.repository.productmapping.ChannelProductRepository;
+import com.aivle.sellon.domain.channels.repository.connection.UsersChannelRepository;
 import com.aivle.sellon.domain.channels.repository.productmapping.MasterProductRepository;
 import com.aivle.sellon.domain.channels.repository.productmapping.ProductMappingReviewItemRepository;
-import com.aivle.sellon.domain.channels.repository.connection.UsersChannelRepository;
+import com.aivle.sellon.rawdb.entity.ChannelProductMapping;
+import com.aivle.sellon.rawdb.entity.RawChannelProduct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -29,10 +28,14 @@ import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
- * 상품 매칭 도커 툴(docker_mapping_tool)과 주고받는 배치 export/import.
- * 그 툴은 CLI 배치 도구라 팀원이 각자 수동으로 컨테이너를 돌리고, 그 결과 CSV를 이 서비스에 업로드하는 구조.
+ * 상품 매칭 도커 툴(docker_mapping_tool)과 주고받는 배치 export/import, 그리고 Mock Producer가
+ * 내려주는 채널 상품 카탈로그(input_channel_products.csv) 적재.
+ * 그 매칭 툴은 CLI 배치 도구라 팀원이 각자 수동으로 컨테이너를 돌리고, 그 결과 CSV를 이 서비스에 업로드하는 구조.
  */
 @Slf4j
 @Service
@@ -44,34 +47,85 @@ public class ChannelProductBatchService {
             "option_group_names", "channel_option_name", "sale_price", "original_price"
     };
 
-    private final ChannelProductRepository channelProductRepository;
+    private final RawChannelProductMappingService rawChannelProductMappingService;
     private final MasterProductRepository masterProductRepository;
     private final UsersChannelRepository usersChannelRepository;
     private final ProductMappingReviewItemRepository productMappingReviewItemRepository;
 
     /**
-     * 미매칭 상품을 매칭 툴 input_channel_products.csv 포맷으로 내보낸다.
+     * Mock Producer의 input_channel_products.csv(variant_row_id, channel, channel_product_id,
+     * channel_product_name, option_group_names, channel_option_name, sale_price, original_price)를
+     * raw db(products/mapped_data)에 적재한다.
+     * 여러 채널 상품이 한 파일에 섞여 있어(크로스채널 매칭 전제) usersChannel이 아닌 회사 단위로 받는다 -
+     * 행마다 channel 컬럼으로 그 회사의 연동된 UsersChannel을 찾고, 연동 안 된 채널의 행은 건너뛴다.
      */
     @Transactional(readOnly = true)
-    public byte[] exportUnmatchedCsv(Long companyId, Long usersChannelKey) {
-        UsersChannel usersChannel = getOwnedUsersChannelOrThrow(usersChannelKey, companyId);
+    public int importChannelProducts(Long companyId, MultipartFile file) {
+        Map<String, UsersChannel> channelMap = usersChannelRepository.findByCompany_Id(companyId).stream()
+                .collect(Collectors.toMap(UsersChannel::getChannelType, Function.identity()));
 
-        List<ChannelProduct> unmatched = channelProductRepository
-                .findByUsersChannel_UsersChannelKeyAndMappingStatus(usersChannelKey, MappingStatus.UNMATCHED);
+        int count = 0;
+        try (InputStreamReader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+             CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build().parse(reader)) {
+
+            for (CSVRecord record : parser) {
+                String channel = record.get("channel");
+                UsersChannel usersChannel = channelMap.get(channel);
+                if (usersChannel == null) {
+                    // 연동되지 않은 채널의 상품 행은 스킵
+                    continue;
+                }
+                rawChannelProductMappingService.upsertProduct(
+                        usersChannel.getUsersChannelKey(),
+                        record.get("variant_row_id"),
+                        channel,
+                        record.get("channel_product_id"),
+                        record.get("channel_product_name"),
+                        record.isMapped("option_group_names") ? record.get("option_group_names") : null,
+                        record.isMapped("channel_option_name") ? record.get("channel_option_name") : null,
+                        parseLongOrNull(record, "sale_price"),
+                        parseLongOrNull(record, "original_price")
+                );
+                count++;
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return count;
+    }
+
+    /**
+     * 미매칭 상품을 매칭 툴 input_channel_products.csv 포맷으로 내보낸다.
+     * 매핑 목적이 서로 다른 채널 상품을 하나의 그룹으로 묶는 것(크로스채널 매칭)이라, 특정 채널 하나가
+     * 아니라 회사가 연동한 모든 채널의 미매칭 상품을 한 파일에 같이 담아야 매칭 툴이 채널 간 비교를 할 수 있다.
+     */
+    @Transactional(readOnly = true)
+    public byte[] exportUnmatchedCsv(Long companyId) {
+        List<Long> usersChannelKeys = usersChannelRepository.findByCompany_Id(companyId).stream()
+                .map(UsersChannel::getUsersChannelKey)
+                .toList();
+
+        List<RawChannelProduct> products = rawChannelProductMappingService.getProducts(usersChannelKeys);
+        Map<String, ChannelProductMapping> mappings = rawChannelProductMappingService.getMappingsByVariantRowIds(
+                products.stream().map(RawChannelProduct::getVariantRowId).toList());
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (OutputStreamWriter writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
              CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT.builder().setHeader(EXPORT_HEADERS).build())) {
-            for (ChannelProduct cp : unmatched) {
+            for (RawChannelProduct p : products) {
+                ChannelProductMapping mapping = mappings.get(p.getVariantRowId());
+                if (mapping != null && mapping.getProductGroupId() != null) {
+                    continue;
+                }
                 printer.printRecord(
-                        cp.getSourceSku(),
-                        usersChannel.getChannelType(),
-                        cp.getChannelItemId(),
-                        cp.getProductName(),
-                        cp.getOptionGroupNames(),
-                        cp.getOptionName(),
-                        cp.getPrice(),
-                        cp.getOriginalPrice()
+                        p.getVariantRowId(),
+                        p.getChannel(),
+                        p.getChannelProductId(),
+                        p.getChannelProductName(),
+                        p.getOptionGroupNames(),
+                        p.getChannelOptionName(),
+                        p.getSalePrice(),
+                        p.getOriginalPrice()
                 );
             }
         } catch (IOException e) {
@@ -82,7 +136,9 @@ public class ChannelProductBatchService {
 
     /**
      * mapping_result.csv(channel, channel_product_id, product_name, median_price, product_key, mapped_product_code, cluster_size) 를 import.
-     * 한 줄 = channelItemId 하나 = 이미 저희 쪽 그룹핑 단위와 동일해서, 같은 channelItemId를 공유하는 옵션 전부를 한번에 확정 처리한다.
+     * 한 줄 = (channel, channel_product_id) 하나 = raw db mapped_data 기준 그룹핑 단위와 동일해서,
+     * 같은 (channel, channel_product_id)를 공유하는 옵션(variant) 전부를 한번에 확정 처리한다.
+     * 클러스터가 여러 채널에 걸칠 수 있어 행마다 CSV의 channel 컬럼을 그대로 쓴다(path의 usersChannelKey는 업로드 주체 인증용).
      */
     @Transactional
     public int importMappingResult(Long companyId, Long usersChannelKey, MultipartFile file) {
@@ -93,7 +149,8 @@ public class ChannelProductBatchService {
              CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build().parse(reader)) {
 
             for (CSVRecord record : parser) {
-                String channelItemId = record.get("channel_product_id");
+                String channel = record.isMapped("channel") ? record.get("channel") : usersChannel.getChannelType();
+                String channelProductId = record.get("channel_product_id");
                 String mappedProductCode = record.get("mapped_product_code");
                 if (mappedProductCode == null || mappedProductCode.isBlank()) {
                     // 매칭 실패/미확정 행은 건너뛴다 (UNMATCHED로 유지)
@@ -101,22 +158,13 @@ public class ChannelProductBatchService {
                 }
                 String productName = record.isMapped("product_name") ? record.get("product_name") : null;
 
-                MasterProduct masterProduct = masterProductRepository.findByMasterSku(mappedProductCode)
+                masterProductRepository.findByCompany_IdAndMasterSku(companyId, mappedProductCode)
                         .orElseGet(() -> masterProductRepository.save(
                                 MasterProduct.of(usersChannel.getCompany(), mappedProductCode,
                                         productName != null ? productName : mappedProductCode)));
 
-                List<ChannelProduct> siblings = channelProductRepository
-                        .findByUsersChannel_UsersChannelKeyAndChannelItemId(usersChannelKey, channelItemId);
-
-                for (ChannelProduct cp : siblings) {
-                    if (cp.getMappingStatus() != MappingStatus.UNMATCHED) {
-                        continue;
-                    }
-                    // 매칭 결과 CSV에는 rule/embedding 구분 컬럼이 없어 Plan A(임베딩 우선) 기준으로 태깅
-                    cp.autoMatch(masterProduct, null, MappingMethod.EMBEDDING, MappingStatus.AUTO_MATCHED);
-                    matchedCount++;
-                }
+                matchedCount += rawChannelProductMappingService.confirmMappingForChannelProduct(
+                        channel, channelProductId, mappedProductCode, MappingMethod.EMBEDDING, null);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -165,6 +213,21 @@ public class ChannelProductBatchService {
         }
         try {
             return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Long parseLongOrNull(CSVRecord record, String column) {
+        if (!record.isMapped(column)) {
+            return null;
+        }
+        String value = record.get(column);
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value);
         } catch (NumberFormatException e) {
             return null;
         }

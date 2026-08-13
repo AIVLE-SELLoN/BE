@@ -14,8 +14,10 @@ public interface MasterProductRepository extends JpaRepository<MasterProduct, Lo
 
     /**
      * 매칭 툴 배치 결과의 mapped_product_code를 masterSku로 그대로 사용 — 이미 존재하면 재사용, 없으면 새로 생성.
+     * master_sku 유니크 범위가 (company_id, master_sku)라 회사 조건 없이 조회하면 타 회사 상품에 잘못 연결될 수 있어
+     * companyId까지 같이 조건으로 건다.
      */
-    Optional<MasterProduct> findByMasterSku(String masterSku);
+    Optional<MasterProduct> findByCompany_IdAndMasterSku(Long companyId, String masterSku);
 
     @Query("SELECT mp FROM MasterProduct mp " +
             "WHERE mp.company.id = :companyId " +

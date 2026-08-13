@@ -8,7 +8,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "master_product")
+@Table(
+        name = "master_product",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_master_product_company_master_sku",
+                columnNames = {"company_id", "master_sku"}
+        )
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MasterProduct extends BaseEntity {
@@ -18,7 +24,7 @@ public class MasterProduct extends BaseEntity {
     @Column(name = "master_product_key")
     private Long masterProductKey;
 
-    @Column(name = "master_sku", nullable = false, unique = true)
+    @Column(name = "master_sku", nullable = false)
     private String masterSku;
 
     @Column(name = "product_name", nullable = false)
