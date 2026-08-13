@@ -3,20 +3,18 @@ package com.aivle.sellon.domain.channels.service.connection;
 import com.aivle.sellon.domain.channels.dto.request.ChannelConnectRequest;
 import com.aivle.sellon.domain.channels.dto.response.ChannelConnectionResponse;
 import com.aivle.sellon.domain.channels.entity.connection.UsersChannel;
-import com.aivle.sellon.domain.channels.enums.ConnectionStatus;
 import com.aivle.sellon.domain.channels.exception.connection.ChannelConnectNotAllowedException;
+import com.aivle.sellon.domain.channels.exception.connection.ChannelKeyFormatInvalidException;
+import com.aivle.sellon.domain.channels.exception.connection.NaverOAuthFailedException;
+import com.aivle.sellon.domain.channels.exception.connection.NaverOAuthStateInvalidException;
 import com.aivle.sellon.domain.channels.repository.connection.UsersChannelRepository;
-import com.aivle.sellon.domain.company.entity.Company;
-import com.aivle.sellon.domain.company.repository.CompanyRepository;
 import com.aivle.sellon.domain.user.enums.Role;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 채널 연동(쿠팡/지그재그 = API 키, 네이버 = OAuth) 처리.
@@ -30,29 +28,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChannelService {
 
     private final UsersChannelRepository usersChannelRepository;
-    private final CompanyRepository companyRepository;
     private final ChannelKeyValidator channelKeyValidator;
     private final MockNaverOAuthClient mockNaverOAuthClient;
-
-    // TODO: Redis 등 외부 저장소로 교체 (인스턴스 재시작 시 유실됨)
-    private final Map<String, Long> naverOAuthStateStore = new ConcurrentHashMap<>();
+    private final NaverOAuthStateService naverOAuthStateService;
 
     @Transactional
     public ChannelConnectionResponse connect(UserPrincipal principal, ChannelConnectRequest request) {
         requireRoot(principal);
 
         if (!channelKeyValidator.validateFormat(request.channelType(), request.channelCode())) {
-            return ChannelConnectionResponse.failed(request.channelType(), "채널 키 형식이 올바르지 않습니다.");
+            throw new ChannelKeyFormatInvalidException();
         }
 
-        Company company = companyRepository.getReferenceById(principal.getCompanyId());
-        UsersChannel usersChannel = usersChannelRepository
-                .findByCompany_IdAndChannelType(principal.getCompanyId(), request.channelType())
-                .orElseGet(() -> UsersChannel.of(company, request.channelType(), request.channelCode()));
-        usersChannel.updateChannelCode(request.channelCode());
-        usersChannel.updateStatus(ConnectionStatus.CONNECTED);
-        usersChannelRepository.save(usersChannel);
-
+        UsersChannel usersChannel = findOrCreate(principal.getCompanyId(), request.channelType(), request.channelCode());
         return ChannelConnectionResponse.from(usersChannel);
     }
 
@@ -60,31 +48,33 @@ public class ChannelService {
         requireRoot(principal);
 
         String state = UUID.randomUUID().toString();
-        naverOAuthStateStore.put(state, principal.getCompanyId());
+        naverOAuthStateService.save(state, principal.getCompanyId());
         return mockNaverOAuthClient.buildAuthorizationUrl(state);
     }
 
     @Transactional
     public ChannelConnectionResponse naverCallback(String code, String state) {
-        Long companyId = naverOAuthStateStore.remove(state);
-        if (companyId == null) {
-            return ChannelConnectionResponse.failed("NAVER", "유효하지 않은 인증 상태입니다.");
-        }
+        Long companyId = naverOAuthStateService.consume(state)
+                .orElseThrow(NaverOAuthStateInvalidException::new);
 
         MockNaverOAuthClient.TokenResult tokenResult = mockNaverOAuthClient.exchangeToken(code);
         if (tokenResult == null) {
-            return ChannelConnectionResponse.failed("NAVER", "네이버 인증에 실패했습니다.");
+            throw new NaverOAuthFailedException();
         }
 
-        Company company = companyRepository.getReferenceById(companyId);
-        UsersChannel usersChannel = usersChannelRepository
-                .findByCompany_IdAndChannelType(companyId, "NAVER")
-                .orElseGet(() -> UsersChannel.of(company, "NAVER", tokenResult.accountId()));
-        usersChannel.updateChannelCode(tokenResult.accountId());
-        usersChannel.updateStatus(ConnectionStatus.CONNECTED);
-        usersChannelRepository.save(usersChannel);
-
+        UsersChannel usersChannel = findOrCreate(companyId, "NAVER", tokenResult.accountId());
         return ChannelConnectionResponse.from(usersChannel);
+    }
+
+    /**
+     * (company, channelType) 조합을 INSERT ... ON CONFLICT로 원자적으로 upsert한 뒤 조회한다.
+     * PostgreSQL 레벨에서 한 문장으로 처리되기 때문에, 동시에 같은 조합으로 연동 요청이 들어와도
+     * 중복 행이 생기거나 트랜잭션이 깨지는 일 없이 항상 하나의 행으로 수렴한다.
+     */
+    private UsersChannel findOrCreate(Long companyId, String channelType, String channelCode) {
+        usersChannelRepository.upsertConnected(companyId, channelType, channelCode);
+        return usersChannelRepository.findByCompany_IdAndChannelType(companyId, channelType)
+                .orElseThrow();
     }
 
     private void requireRoot(UserPrincipal principal) {

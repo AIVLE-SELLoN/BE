@@ -64,6 +64,10 @@ public class User extends BaseEntity {
         return new User(email, password, name, Role.MEMBER, company);
     }
 
+    public static User createAdmin(String email, String password, String name, Company company) {
+        return new User(email, password, name, Role.ADMIN, company);
+    }
+
     public void withdraw() {
         delete();
     }

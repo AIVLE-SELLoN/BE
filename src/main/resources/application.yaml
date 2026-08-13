@@ -36,6 +36,10 @@ spring:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
   # 리스너 재시도 정책 (환경 무관 공통). 기본 컨테이너 팩토리에 적용되므로
   # containerFactory를 따로 지정하지 않은 모든 @RabbitListener가 이 설정을 따른다.
@@ -54,6 +58,18 @@ spring:
 ai-service:
   base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
 
+file:
+  storage-type: local   # local | s3 (S3 전환 시 s3로 변경, 관련 설정 추가 필요)
+  upload-dir: ./uploads
+  # s3:
+  #   bucket: {버킷명}
+  #   presigned-url-expire-minutes: 10
+sellon:
+  admin:
+    seed:
+      email: ${ADMIN_SEED_EMAIL:}
+      password: ${ADMIN_SEED_PASSWORD:}
+      name: ${ADMIN_SEED_NAME:관리자}
 # OpenSearch는 로컬/배포 모두 환경변수로만 접속하는 구조라 프로필 공통으로 둔다
 aws:
   opensearch:
@@ -72,6 +88,9 @@ report:
 guideline:
   download-url:
     expire: 604800000 # 파일 보관 기한과 동일한 7일 (ms)
+  file:
+    # 재생성해 올린 PDF도 S3 lifecycle을 그대로 따르므로, 만료 시각을 같은 기간으로 잡는다
+    retention: 604800000 # 7일 (ms)
 cloud:
   aws:
     region: ap-northeast-2
@@ -90,5 +109,3 @@ raw-db:
     driver-class-name: org.postgresql.Driver
     username: postgres
     password:
-
-
