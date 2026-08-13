@@ -67,6 +67,10 @@ public class SecurityConfig {
                                 "/api/v1/sellon/verification/email-verification",
                                 "/api/v1/sellon/verification/email-verification/confirm")
                         .permitAll()
+                        // 네이버 OAuth 콜백: 네이버 서버가 브라우저를 직접 리다이렉트시키는 경로라
+                        // 우리 서비스의 Bearer JWT를 들고 올 수 없다 - state 파라미터로 회사를 식별한다.
+                        .requestMatchers(HttpMethod.GET, "/channels/naver/callback")
+                        .permitAll()
                         .requestMatchers(PERMIT_ALL_PATHS).permitAll()
                         .anyRequest().authenticated()
                 )
