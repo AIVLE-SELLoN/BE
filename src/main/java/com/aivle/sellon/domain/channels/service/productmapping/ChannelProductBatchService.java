@@ -121,7 +121,7 @@ public class ChannelProductBatchService {
                 }
                 printer.printRecord(
                         p.getVariantRowId(),
-                        p.getChannel(),
+                        p.getChannelId(),
                         p.getChannelProductId(),
                         p.getChannelProductName(),
                         p.getOptionGroupNames(),
@@ -164,9 +164,9 @@ public class ChannelProductBatchService {
                         channel, channelProductId, mappedProductCode, MappingMethod.EMBEDDING, null);
 
                 // 사람 개입 우선 정책으로 전부 MANUAL 보호되어 실제 갱신이 없었다면(confirmed == 0),
-                // 아무 데도 안 쓰이는 MasterProduct(master_sku)를 낭비하지 않도록 생성하지 않는다.
+                // 아무 데도 안 쓰이는 MasterProduct(product_group_id)를 낭비하지 않도록 생성하지 않는다.
                 if (confirmed > 0) {
-                    masterProductRepository.findByCompany_IdAndMasterSku(companyId, mappedProductCode)
+                    masterProductRepository.findByCompany_IdAndProductGroupId(companyId, mappedProductCode)
                             .orElseGet(() -> masterProductRepository.save(
                                     MasterProduct.of(usersChannel.getCompany(), mappedProductCode,
                                             productName != null ? productName : mappedProductCode)));

@@ -83,7 +83,7 @@ public class RawChannelProductMappingService {
     }
 
     /**
-     * variantRowId 하나를 productGroupId(=masterSku)로 확정하고, 같은 channelProductId를 공유하는
+     * variantRowId 하나를 productGroupId(=MasterProduct.productGroupId)로 확정하고, 같은 channelProductId를 공유하는
      * 나머지 미확정(productGroupId == null) 옵션들도 같이 확정 처리한다 (cascade).
      * 상품 매핑 소급 반영 계약 ①/④에 따라, 이미 적재된 과거 cs/reviews 행도
      * 같은 (channel, channelProductId) 기준으로 전량 소급 갱신한다 (기간 제한 없이 전체).

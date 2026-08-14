@@ -12,7 +12,7 @@ public record ChannelProductResponse(
         String productName,
         String optionName,
         Long price,
-        String masterSku,
+        String productGroupId,
         MappingMethod mappingMethod,
         MappingStatus mappingStatus
 ) {
@@ -20,7 +20,7 @@ public record ChannelProductResponse(
         boolean matched = mapping != null && mapping.getProductGroupId() != null;
         return new ChannelProductResponse(
                 product.getVariantRowId(),
-                product.getChannel(),
+                product.getChannelId(),
                 product.getChannelProductId(),
                 product.getChannelProductName(),
                 product.getChannelOptionName(),

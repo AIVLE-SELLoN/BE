@@ -26,7 +26,7 @@ import java.util.Map;
 
 /**
  * 상품 매핑은 raw db(products/mapped_data)의 실제 채널 상품·매핑 데이터를 조회/확정하는 기능이다.
- * 채널 상품 원본 자체는 raw db에만 있고(메인 db에 별도 복제하지 않음), 마스터 상품(이름/SKU)만
+ * 채널 상품 원본 자체는 raw db에만 있고(메인 db에 별도 복제하지 않음), 마스터 상품(이름/product_group_id)만
  * 메인 db(MasterProduct)에서 관리한다 - raw db 확정 스키마엔 마스터 상품명을 담는 테이블이 없기 때문.
  * raw db 조회/쓰기는 전부 RawChannelProductMappingService(별도 트랜잭션)에 위임한다.
  */
@@ -43,7 +43,7 @@ public class ChannelProductService {
 
     @Transactional(readOnly = true)
     public List<ChannelProductResponse> getMappings(Long companyId, Long usersChannelKey, Boolean matched, String keyword) {
-        UsersChannel usersChannel = verifyOwnership(usersChannelKey, companyId);
+        verifyOwnership(usersChannelKey, companyId);
 
         List<RawChannelProduct> products = rawChannelProductMappingService.getProducts(usersChannelKey);
         Map<String, ChannelProductMapping> mappings = rawChannelProductMappingService.getMappingsByVariantRowIds(
@@ -86,7 +86,7 @@ public class ChannelProductService {
                 .limit(MAX_CANDIDATES)
                 .map(c -> new MatchCandidateResponse(
                         c.masterProduct().getMasterProductKey(),
-                        c.masterProduct().getMasterSku(),
+                        c.masterProduct().getProductGroupId(),
                         c.masterProduct().getProductName(),
                         c.similarityScore(),
                         false
@@ -104,7 +104,7 @@ public class ChannelProductService {
         }
 
         rawChannelProductMappingService.confirmMapping(
-                variantRowId, product.getChannel(), product.getChannelProductId(), masterProduct.getMasterSku());
+                variantRowId, product.getChannelId(), product.getChannelProductId(), masterProduct.getProductGroupId());
 
         ChannelProductMapping mapping = rawChannelProductMappingService.getMapping(variantRowId).orElseThrow();
         return ChannelProductResponse.of(product, mapping);
@@ -122,11 +122,11 @@ public class ChannelProductService {
                 : product.getChannelProductName();
 
         MasterProduct masterProduct = masterProductRepository.save(
-                MasterProduct.of(company, generateMasterSku(company.getId()), productName));
+                MasterProduct.of(company, generateProductGroupId(company.getId()), productName));
 
         try {
             rawChannelProductMappingService.confirmMapping(
-                    variantRowId, product.getChannel(), product.getChannelProductId(), masterProduct.getMasterSku());
+                    variantRowId, product.getChannelId(), product.getChannelProductId(), masterProduct.getProductGroupId());
         } catch (RuntimeException e) {
             // raw db(mapped_data) 반영이 실패하면 방금 메인 db에 만든 마스터 상품이 아무 상품도
             // 연결되지 않은 빈 채로 남는다 - 메인 db와 raw db가 물리적으로 다른 데이터소스라 하나의
@@ -165,7 +165,7 @@ public class ChannelProductService {
 
     // TODO: 동시성 안전한 시퀀스로 교체 필요 (지금은 count 기반 임시 채번)
     // 매칭 툴(mapping_result.csv)의 mapped_product_code 규칙(P{숫자})과 동일한 형식으로 채번한다.
-    private String generateMasterSku(Long companyId) {
+    private String generateProductGroupId(Long companyId) {
         long nextSeq = masterProductRepository.countByCompany_Id(companyId) + 1;
         return "P%04d".formatted(nextSeq);
     }
