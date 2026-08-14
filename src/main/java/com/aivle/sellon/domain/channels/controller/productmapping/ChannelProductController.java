@@ -18,6 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
+
 @RestController
 @RequestMapping("/channels/{usersChannelKey}/product-mappings")
 @RequiredArgsConstructor
@@ -77,7 +79,7 @@ public class ChannelProductController {
         return ApiResponse.ok(channelProductService.createNewGroup(principal.getCompanyId(), usersChannelKey, variantRowId, request));
     }
 
-    @PostMapping("/import/mapping-result")
+    @PostMapping(value = "/import/mapping-result", consumes = MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Map<String, Integer>>> importMappingResult(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long usersChannelKey,
@@ -87,7 +89,7 @@ public class ChannelProductController {
         return ApiResponse.ok(Map.of("matchedCount", matchedCount));
     }
 
-    @PostMapping("/import/review-queue")
+    @PostMapping(value = "/import/review-queue", consumes = MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Map<String, Integer>>> importReviewQueue(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long usersChannelKey,

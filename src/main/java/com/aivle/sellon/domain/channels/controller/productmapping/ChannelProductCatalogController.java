@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
+
 import java.util.Map;
 
 /**
@@ -29,7 +31,7 @@ public class ChannelProductCatalogController {
 
     private final ChannelProductBatchService channelProductBatchService;
 
-    @PostMapping("/import")
+    @PostMapping(value = "/import", consumes = MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Map<String, Integer>>> importChannelProducts(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam("file") MultipartFile file

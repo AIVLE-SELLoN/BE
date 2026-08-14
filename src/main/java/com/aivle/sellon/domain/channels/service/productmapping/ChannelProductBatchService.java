@@ -23,8 +23,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PushbackInputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -65,7 +67,7 @@ public class ChannelProductBatchService {
                 .collect(Collectors.toMap(UsersChannel::getChannelType, Function.identity()));
 
         int count = 0;
-        try (InputStreamReader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+        try (InputStreamReader reader = new InputStreamReader(stripBom(file.getInputStream()), StandardCharsets.UTF_8);
              CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build().parse(reader)) {
 
             for (CSVRecord record : parser) {
@@ -145,7 +147,7 @@ public class ChannelProductBatchService {
         UsersChannel usersChannel = getOwnedUsersChannelOrThrow(usersChannelKey, companyId);
 
         int matchedCount = 0;
-        try (InputStreamReader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+        try (InputStreamReader reader = new InputStreamReader(stripBom(file.getInputStream()), StandardCharsets.UTF_8);
              CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build().parse(reader)) {
 
             for (CSVRecord record : parser) {
@@ -158,13 +160,19 @@ public class ChannelProductBatchService {
                 }
                 String productName = record.isMapped("product_name") ? record.get("product_name") : null;
 
-                masterProductRepository.findByCompany_IdAndMasterSku(companyId, mappedProductCode)
-                        .orElseGet(() -> masterProductRepository.save(
-                                MasterProduct.of(usersChannel.getCompany(), mappedProductCode,
-                                        productName != null ? productName : mappedProductCode)));
-
-                matchedCount += rawChannelProductMappingService.confirmMappingForChannelProduct(
+                int confirmed = rawChannelProductMappingService.confirmMappingForChannelProduct(
                         channel, channelProductId, mappedProductCode, MappingMethod.EMBEDDING, null);
+
+                // 사람 개입 우선 정책으로 전부 MANUAL 보호되어 실제 갱신이 없었다면(confirmed == 0),
+                // 아무 데도 안 쓰이는 MasterProduct(master_sku)를 낭비하지 않도록 생성하지 않는다.
+                if (confirmed > 0) {
+                    masterProductRepository.findByCompany_IdAndMasterSku(companyId, mappedProductCode)
+                            .orElseGet(() -> masterProductRepository.save(
+                                    MasterProduct.of(usersChannel.getCompany(), mappedProductCode,
+                                            productName != null ? productName : mappedProductCode)));
+                }
+
+                matchedCount += confirmed;
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -181,7 +189,7 @@ public class ChannelProductBatchService {
     public int importReviewQueue(Long companyId, Long usersChannelKey, MultipartFile file) {
         UsersChannel usersChannel = getOwnedUsersChannelOrThrow(usersChannelKey, companyId);
         int rowCount = 0;
-        try (InputStreamReader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+        try (InputStreamReader reader = new InputStreamReader(stripBom(file.getInputStream()), StandardCharsets.UTF_8);
              CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build().parse(reader)) {
 
             for (CSVRecord record : parser) {
@@ -231,6 +239,21 @@ public class ChannelProductBatchService {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    /**
+     * 엑셀 등에서 저장한 CSV는 앞에 보이지 않는 UTF-8 BOM(EF BB BF)이 붙는 경우가 많다.
+     * BOM이 그대로 남으면 첫 헤더("variant_row_id" 등) 앞에 붙어버려 정확한 컬럼명 매칭이
+     * 실패하므로(Mapping for variant_row_id not found), 파싱 전에 미리 걷어낸다.
+     */
+    private InputStream stripBom(InputStream in) throws IOException {
+        PushbackInputStream pushbackInputStream = new PushbackInputStream(in, 3);
+        byte[] bom = new byte[3];
+        int read = pushbackInputStream.read(bom, 0, 3);
+        if (read != 3 || bom[0] != (byte) 0xEF || bom[1] != (byte) 0xBB || bom[2] != (byte) 0xBF) {
+            pushbackInputStream.unread(bom, 0, Math.max(read, 0));
+        }
+        return pushbackInputStream;
     }
 
     private UsersChannel getOwnedUsersChannelOrThrow(Long usersChannelKey, Long companyId) {

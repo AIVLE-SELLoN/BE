@@ -5,7 +5,10 @@ import com.aivle.sellon.rawdb.entity.ChannelProductMapping;
 import com.aivle.sellon.rawdb.entity.RawChannelProduct;
 import com.aivle.sellon.rawdb.repository.ChannelProductMappingRepository;
 import com.aivle.sellon.rawdb.repository.RawChannelProductRepository;
+import com.aivle.sellon.rawdb.repository.RawCsInquiryRepository;
+import com.aivle.sellon.rawdb.repository.RawReviewRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,12 +26,15 @@ import java.util.stream.Collectors;
  * 즉 "메인 db에서 MasterProduct 확정" + "raw db에 productGroupId 반영"은 각각 별도 트랜잭션으로
  * 커밋되며, 두 번째 단계 실패 시 수동 재시도가 필요할 수 있다 (원자적 트랜잭션 아님 - 알려진 한계).
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RawChannelProductMappingService {
 
     private final RawChannelProductRepository rawChannelProductRepository;
     private final ChannelProductMappingRepository channelProductMappingRepository;
+    private final RawCsInquiryRepository rawCsInquiryRepository;
+    private final RawReviewRepository rawReviewRepository;
 
     @Transactional(value = "rawDbTransactionManager", readOnly = true)
     public List<RawChannelProduct> getProducts(Long usersChannelKey) {
@@ -79,6 +85,8 @@ public class RawChannelProductMappingService {
     /**
      * variantRowId 하나를 productGroupId(=masterSku)로 확정하고, 같은 channelProductId를 공유하는
      * 나머지 미확정(productGroupId == null) 옵션들도 같이 확정 처리한다 (cascade).
+     * 상품 매핑 소급 반영 계약 ①/④에 따라, 이미 적재된 과거 cs/reviews 행도
+     * 같은 (channel, channelProductId) 기준으로 전량 소급 갱신한다 (기간 제한 없이 전체).
      */
     @Transactional("rawDbTransactionManager")
     public void confirmMapping(String variantRowId, String channel, String channelProductId, String productGroupId) {
@@ -98,13 +106,19 @@ public class RawChannelProductMappingService {
             sibling.confirm(productGroupId, MappingMethod.MANUAL, null, now);
             channelProductMappingRepository.save(sibling);
         }
+
+        backfillProductGroupId(channel, channelProductId, productGroupId);
     }
 
     /**
-     * (channel, channelProductId)를 공유하는 미확정(productGroupId == null) 매핑 전부를
-     * 배치 매칭 결과로 확정한다 - mapping_result.csv import 전용 (variant 단위가 아니라
-     * channel_product_id 단위 클러스터 결과를 한번에 반영).
-     * @return 실제로 확정 처리된 행 수
+     * (channel, channelProductId)를 공유하는 매핑을 배치 매칭 결과(mapping_result.csv import)로
+     * 확정한다 - variant 단위가 아니라 channel_product_id 단위 클러스터 결과를 한번에 반영한다.
+     * 정책: "사람 개입 우선" - 이미 사람이 화면에서 직접 확정한 매핑(MappingMethod.MANUAL)은
+     * 배치 재구성(§5-3 주 1회) 결과가 들어와도 덮어쓰지 않는다. 아직 미확정이거나 이전에
+     * 배치(RULE/EMBEDDING 등)로만 자동 매핑됐던 건은 최신 배치 결과로 갱신한다.
+     * 상품 매핑 소급 반영 계약 ①/④에 따라, 실제로 갱신된 경우 이미 적재된 과거
+     * cs/reviews 행도 같은 (channel, channelProductId) 기준으로 전량 소급 갱신한다 (기간 제한 없이 전체).
+     * @return 실제로 확정/갱신 처리된 행 수 (MANUAL 보호로 스킵된 행은 제외)
      */
     @Transactional("rawDbTransactionManager")
     public int confirmMappingForChannelProduct(String channel, String channelProductId, String productGroupId,
@@ -115,13 +129,33 @@ public class RawChannelProductMappingService {
 
         int count = 0;
         for (ChannelProductMapping sibling : siblings) {
-            if (sibling.getProductGroupId() != null) {
+            if (sibling.getMappingMethod() == MappingMethod.MANUAL) {
+                // 사람이 직접 확정한 매핑은 배치 재구성으로 덮어쓰지 않는다 (사람 개입 우선 정책).
                 continue;
             }
             sibling.confirm(productGroupId, mappingMethod, mappingConfidence, now);
             channelProductMappingRepository.save(sibling);
             count++;
         }
+
+        if (count > 0) {
+            backfillProductGroupId(channel, channelProductId, productGroupId);
+        }
         return count;
+    }
+
+    /**
+     * mapped_data가 (channel, channelProductId) 기준으로 새 product_group_id로 확정/변경될 때마다
+     * 호출되어, 이미 적재된 과거 cs/reviews 행의 product_group_id를 같은 값으로 소급 갱신한다.
+     * "최근 N일만" 갱신하면 이상탐지 분모가 시간축 앞쪽만 깎여 과거 비율이 왜곡되므로,
+     * 시간 조건 없이 해당 (channel, channelProductId)의 전체 행을 갱신한다.
+     */
+    private void backfillProductGroupId(String channel, String channelProductId, String productGroupId) {
+        int updatedCsCount = rawCsInquiryRepository.updateProductGroupIdByChannelAndChannelProductId(
+                channel, channelProductId, productGroupId);
+        int updatedReviewCount = rawReviewRepository.updateProductGroupIdByChannelAndChannelProductId(
+                channel, channelProductId, productGroupId);
+        log.info("[상품 매핑 소급 반영] channel={}, channelProductId={}, productGroupId={} -> cs {}건, reviews {}건 갱신",
+                channel, channelProductId, productGroupId, updatedCsCount, updatedReviewCount);
     }
 }
