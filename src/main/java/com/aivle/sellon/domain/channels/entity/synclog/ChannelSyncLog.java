@@ -8,6 +8,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+// "채널 연동 이력·로그" 화면용. RawChannelSyncPollingService가 폴링해서 SUCCESS/FAILED로 기록한다.
 @Entity
 @Table(name = "channel_sync_log")
 @Getter
@@ -33,27 +34,6 @@ public class ChannelSyncLog extends BaseEntity {
     @Column(name = "fail_reason")
     private String failReason;
 
-    /**
-     * 재시도(dead-letter)용 원본 Kafka 메시지 스냅샷 - 실패 시에만 채워진다.
-     * Mock Producer/Kafka를 다시 거치지 않고 이 값 그대로 RawChannelEventIngestService.ingest()를
-     * 재호출해 "그 실패 건 하나만" 재처리하기 위함.
-     */
-    @Column(name = "event_type")
-    private String eventType;
-
-    @Column(name = "topic")
-    private String topic;
-
-    @Column(name = "timestamp_field")
-    private String timestampField;
-
-    @Column(name = "message_key")
-    private String messageKey;
-
-    @Lob
-    @Column(name = "payload")
-    private String payload;
-
     public static ChannelSyncLog success(UsersChannel usersChannel, Integer syncedCount) {
         ChannelSyncLog entity = new ChannelSyncLog();
         entity.usersChannel = usersChannel;
@@ -67,18 +47,6 @@ public class ChannelSyncLog extends BaseEntity {
         entity.usersChannel = usersChannel;
         entity.status = SyncStatus.FAILED;
         entity.failReason = failReason;
-        return entity;
-    }
-
-    public static ChannelSyncLog failure(UsersChannel usersChannel, String failReason,
-                                          String eventType, String topic, String timestampField,
-                                          String messageKey, String payload) {
-        ChannelSyncLog entity = failure(usersChannel, failReason);
-        entity.eventType = eventType;
-        entity.topic = topic;
-        entity.timestampField = timestampField;
-        entity.messageKey = messageKey;
-        entity.payload = payload;
         return entity;
     }
 }

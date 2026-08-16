@@ -16,13 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
-/**
- * 채널 연동(쿠팡/지그재그 = API 키, 네이버 = OAuth) 처리.
- * 실제 외부 API 호출이 아니라 Mock 데이터 기준으로 동작한다.
- * 채널 연동은 회사 리소스이지만, 연동 수행 자체는 ROOT 계정만 가능하다.
- * NOTE: 여기서 채널연동 완료 시 별도로 데이터 주입 이벤트를 발행하지 않는다 —
- * Mock Producer가 CSV를 독립적으로 재생하는 구조라 우리 쪽은 그 결과를 받는 소비자(consumer) 역할이기 때문.
- */
 @Service
 @RequiredArgsConstructor
 public class ChannelService {
