@@ -4,11 +4,13 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Immutable;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Entity
+@Immutable
 @Table(name = "orders")
 @IdClass(RawOrderId.class)
 @Getter
