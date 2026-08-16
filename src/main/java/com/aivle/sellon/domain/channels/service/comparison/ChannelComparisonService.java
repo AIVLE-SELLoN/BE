@@ -15,7 +15,7 @@ import com.aivle.sellon.domain.channels.repository.comparison.ChannelInsightRepo
 import com.aivle.sellon.domain.channels.repository.comparison.ChannelMonthlyInquiryRepository;
 import com.aivle.sellon.domain.channels.repository.connection.UsersChannelRepository;
 import com.aivle.sellon.rawdb.entity.ClassifiedItemAspect;
-import com.aivle.sellon.rawdb.entity.RawCsInquiry;
+import com.aivle.sellon.rawdb.entity.RawCs;
 import com.aivle.sellon.rawdb.entity.RawOrder;
 import com.aivle.sellon.rawdb.entity.RawReview;
 import com.aivle.sellon.rawdb.repository.ClassifiedItemAspectRepository;
@@ -326,10 +326,10 @@ public class ChannelComparisonService {
     }
 
     private InquiryStats computeInquiryStats(String channelType) {
-        List<RawCsInquiry> inquiries = rawCsInquiryRepository.findByChannelId(channelType);
+        List<RawCs> inquiries = rawCsInquiryRepository.findByChannelId(channelType);
 
         Map<YearMonth, Integer> countsByMonth = new TreeMap<>();
-        for (RawCsInquiry inquiry : inquiries) {
+        for (RawCs inquiry : inquiries) {
             if (inquiry.getInquiredAt() == null) {
                 continue;
             }
@@ -372,7 +372,7 @@ public class ChannelComparisonService {
         long ratingSum = 0;
 
         for (RawReview review : reviews) {
-            Integer rating = review.getRating();
+            Short rating = review.getRating();
             if (rating == null) {
                 continue;
             }
@@ -403,7 +403,7 @@ public class ChannelComparisonService {
      */
     private List<ChannelComparisonClient.InquiryTypeCount> computeInquiryTypeCounts(String channelType) {
         List<String> inquiryIds = rawCsInquiryRepository.findByChannelId(channelType).stream()
-                .map(RawCsInquiry::getId)
+                .map(RawCs::getId)
                 .toList();
 
         if (inquiryIds.isEmpty()) {

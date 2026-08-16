@@ -4,8 +4,9 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Immutable;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * 「Raw DB 스키마 확정 (8/7)」§2-4 cs. main server(우리) 소유·쓰기 대상.
@@ -14,10 +15,11 @@ import java.time.LocalDateTime;
  * classified_item.item_id로 그대로 재사용하므로 여기서 값을 바꾸면 조인이 깨진다.
  */
 @Entity
+@Immutable
 @Table(name = "cs")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class RawCsInquiry {
+public class RawCs {
 
     @Id
     @Column(name = "id")
@@ -36,15 +38,15 @@ public class RawCsInquiry {
     private String content;
 
     @Column(name = "inquired_at", nullable = false)
-    private LocalDateTime inquiredAt;
+    private OffsetDateTime inquiredAt;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 
-    public static RawCsInquiry of(String id, String channelProductId, String productGroupId,
-                                   String channelId, String content, LocalDateTime inquiredAt,
-                                   LocalDateTime createdAt) {
-        RawCsInquiry entity = new RawCsInquiry();
+    public static RawCs of(String id, String channelProductId, String productGroupId,
+                           String channelId, String content, OffsetDateTime inquiredAt,
+                           OffsetDateTime createdAt) {
+        RawCs entity = new RawCs();
         entity.id = id;
         entity.channelProductId = channelProductId;
         entity.productGroupId = productGroupId;

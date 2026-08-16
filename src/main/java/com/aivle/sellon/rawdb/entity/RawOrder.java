@@ -4,15 +4,17 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Immutable;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * 「Raw DB 스키마 확정 (8/7)」§2-9 orders. main server(우리) 소유·쓰기 대상.
  * 채널별 하루 합산 주문 원본 - 개별 주문건이 아니다.
  */
 @Entity
+@Immutable
 @Table(name = "orders")
 @IdClass(RawOrderId.class)
 @Getter
@@ -35,13 +37,13 @@ public class RawOrder {
     private Integer quantity;
 
     @Column(name = "order_amount", nullable = false)
-    private Integer orderAmount;
+    private Long orderAmount;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     public static RawOrder of(String channelId, String channelProductId, LocalDate orderDate,
-                               Integer quantity, Integer orderAmount, LocalDateTime createdAt) {
+                               Integer quantity, Long orderAmount, OffsetDateTime createdAt) {
         RawOrder entity = new RawOrder();
         entity.channelId = channelId;
         entity.channelProductId = channelProductId;

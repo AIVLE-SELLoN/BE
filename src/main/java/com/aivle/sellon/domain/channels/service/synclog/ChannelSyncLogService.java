@@ -36,16 +36,4 @@ public class ChannelSyncLogService {
     public void recordFailure(UsersChannel usersChannel, String failReason) {
         channelSyncLogRepository.save(ChannelSyncLog.failure(usersChannel, failReason));
     }
-
-    /**
-     * 재시도(dead-letter)용 원본 Kafka 메시지까지 같이 저장하는 버전.
-     * RawChannelEventRetryService가 이 값을 그대로 다시 읽어 ingest()를 재호출한다.
-     */
-    @Transactional
-    public void recordFailure(UsersChannel usersChannel, String failReason,
-                               String eventType, String topic, String timestampField,
-                               String messageKey, String payload) {
-        channelSyncLogRepository.save(ChannelSyncLog.failure(
-                usersChannel, failReason, eventType, topic, timestampField, messageKey, payload));
-    }
 }

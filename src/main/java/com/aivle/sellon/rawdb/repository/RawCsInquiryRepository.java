@@ -1,10 +1,12 @@
 package com.aivle.sellon.rawdb.repository;
 
-import com.aivle.sellon.rawdb.entity.RawCsInquiry;
+import com.aivle.sellon.rawdb.entity.RawCs;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-public interface RawCsInquiryRepository extends JpaRepository<RawCsInquiry, String> {
-    List<RawCsInquiry> findByChannelId(String channelId);
+public interface RawCsInquiryRepository extends JpaRepository<RawCs, String> {
+    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
+    List<RawCs> findByChannelId(String channelId);
 }

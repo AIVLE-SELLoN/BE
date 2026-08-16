@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Immutable;
 
 /**
  * 「Raw DB 스키마 확정 (8/7)」§2-6 classified_item_aspect. AI 노드(classification_worker)
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
  * aspect 컬럼은 한글 라벨("색상" 등)이 그대로 저장되므로 InquiryTypeConverter로 변환한다.
  */
 @Entity
+@Immutable
 @Table(name = "classified_item_aspect")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
