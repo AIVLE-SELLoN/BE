@@ -18,10 +18,7 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 public class RawProduct {
 
-    /**
-     * 채널 유입 이벤트 원본의 행 식별자 (매칭 툴 input_channel_products.csv의 variant_row_id와 대응).
-     * 옵션 조합 단위 유니크 키라 raw db 확정 스키마상 자연키 PK로 쓴다 (별도 auto-increment PK 없음).
-     */
+    // 옵션 조합 단위 자연키 (input_channel_products.csv의 variant_row_id와 대응, 별도 PK 없음)
     @Id
     @Column(name = "variant_row_id")
     private String variantRowId;
@@ -32,7 +29,7 @@ public class RawProduct {
     @Column(name = "channel_id", nullable = false)
     private String channelId;
 
-    // 같은 기본 상품의 옵션들을 묶는 채널 측 상품 식별자.
+    // 같은 기본 상품의 옵션들을 묶는 채널 측 상품 식별자 (PK 아님)
     @Column(name = "channel_product_id", nullable = false)
     private String channelProductId;
 

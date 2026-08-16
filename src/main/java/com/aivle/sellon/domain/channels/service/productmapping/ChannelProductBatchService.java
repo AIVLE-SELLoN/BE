@@ -9,8 +9,8 @@ import com.aivle.sellon.domain.channels.exception.connection.UsersChannelNotFoun
 import com.aivle.sellon.domain.channels.repository.connection.UsersChannelRepository;
 import com.aivle.sellon.domain.channels.repository.productmapping.MasterProductRepository;
 import com.aivle.sellon.domain.channels.repository.productmapping.ProductMappingReviewItemRepository;
-import com.aivle.sellon.rawdb.entity.ChannelProductMapping;
-import com.aivle.sellon.rawdb.entity.RawChannelProduct;
+import com.aivle.sellon.rawdb.entity.RawMappedData;
+import com.aivle.sellon.rawdb.entity.RawProduct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -34,11 +34,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * 상품 매칭 도커 툴(docker_mapping_tool)과 주고받는 배치 export/import, 그리고 Mock Producer가
- * 내려주는 채널 상품 카탈로그(input_channel_products.csv) 적재.
- * 그 매칭 툴은 CLI 배치 도구라 팀원이 각자 수동으로 컨테이너를 돌리고, 그 결과 CSV를 이 서비스에 업로드하는 구조.
- */
+// 상품 매칭 도커 툴(docker_mapping_tool)과 주고받는 배치 export/import + 채널 상품 카탈로그 적재
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -54,13 +50,7 @@ public class ChannelProductBatchService {
     private final UsersChannelRepository usersChannelRepository;
     private final ProductMappingReviewItemRepository productMappingReviewItemRepository;
 
-    /**
-     * Mock Producer의 input_channel_products.csv(variant_row_id, channel, channel_product_id,
-     * channel_product_name, option_group_names, channel_option_name, sale_price, original_price)를
-     * raw db(products/mapped_data)에 적재한다.
-     * 여러 채널 상품이 한 파일에 섞여 있어(크로스채널 매칭 전제) usersChannel이 아닌 회사 단위로 받는다 -
-     * 행마다 channel 컬럼으로 그 회사의 연동된 UsersChannel을 찾고, 연동 안 된 채널의 행은 건너뛴다.
-     */
+    // input_channel_products.csv를 raw db에 적재 - 회사 단위로 받아 channel 컬럼으로 UsersChannel을 찾고, 미연동 채널 행은 스킵
     @Transactional(readOnly = true)
     public int importChannelProducts(Long companyId, MultipartFile file) {
         Map<String, UsersChannel> channelMap = usersChannelRepository.findByCompany_Id(companyId).stream()
@@ -96,26 +86,22 @@ public class ChannelProductBatchService {
         return count;
     }
 
-    /**
-     * 미매칭 상품을 매칭 툴 input_channel_products.csv 포맷으로 내보낸다.
-     * 매핑 목적이 서로 다른 채널 상품을 하나의 그룹으로 묶는 것(크로스채널 매칭)이라, 특정 채널 하나가
-     * 아니라 회사가 연동한 모든 채널의 미매칭 상품을 한 파일에 같이 담아야 매칭 툴이 채널 간 비교를 할 수 있다.
-     */
+    // 회사가 연동한 모든 채널의 미매칭 상품을 매칭 툴 input_channel_products.csv 포맷으로 내보냄 (크로스채널 매칭용)
     @Transactional(readOnly = true)
     public byte[] exportUnmatchedCsv(Long companyId) {
         List<Long> usersChannelKeys = usersChannelRepository.findByCompany_Id(companyId).stream()
                 .map(UsersChannel::getUsersChannelKey)
                 .toList();
 
-        List<RawChannelProduct> products = rawChannelProductMappingService.getProducts(usersChannelKeys);
-        Map<String, ChannelProductMapping> mappings = rawChannelProductMappingService.getMappingsByVariantRowIds(
-                products.stream().map(RawChannelProduct::getVariantRowId).toList());
+        List<RawProduct> products = rawChannelProductMappingService.getProducts(usersChannelKeys);
+        Map<String, RawMappedData> mappings = rawChannelProductMappingService.getMappingsByVariantRowIds(
+                products.stream().map(RawProduct::getVariantRowId).toList());
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (OutputStreamWriter writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
              CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT.builder().setHeader(EXPORT_HEADERS).build())) {
-            for (RawChannelProduct p : products) {
-                ChannelProductMapping mapping = mappings.get(p.getVariantRowId());
+            for (RawProduct p : products) {
+                RawMappedData mapping = mappings.get(p.getVariantRowId());
                 if (mapping != null && mapping.getProductGroupId() != null) {
                     continue;
                 }
@@ -136,12 +122,7 @@ public class ChannelProductBatchService {
         return out.toByteArray();
     }
 
-    /**
-     * mapping_result.csv(channel, channel_product_id, product_name, median_price, product_key, mapped_product_code, cluster_size) 를 import.
-     * 한 줄 = (channel, channel_product_id) 하나 = raw db mapped_data 기준 그룹핑 단위와 동일해서,
-     * 같은 (channel, channel_product_id)를 공유하는 옵션(variant) 전부를 한번에 확정 처리한다.
-     * 클러스터가 여러 채널에 걸칠 수 있어 행마다 CSV의 channel 컬럼을 그대로 쓴다(path의 usersChannelKey는 업로드 주체 인증용).
-     */
+    // mapping_result.csv import - 같은 (channel, channel_product_id)의 variant 전부를 한번에 확정 처리
     @Transactional
     public int importMappingResult(Long companyId, Long usersChannelKey, MultipartFile file) {
         UsersChannel usersChannel = getOwnedUsersChannelOrThrow(usersChannelKey, companyId);
@@ -163,8 +144,7 @@ public class ChannelProductBatchService {
                 int confirmed = rawChannelProductMappingService.confirmMappingForChannelProduct(
                         channel, channelProductId, mappedProductCode, MappingMethod.EMBEDDING, null);
 
-                // 사람 개입 우선 정책으로 전부 MANUAL 보호되어 실제 갱신이 없었다면(confirmed == 0),
-                // 아무 데도 안 쓰이는 MasterProduct(product_group_id)를 낭비하지 않도록 생성하지 않는다.
+                // 실제 갱신이 없었다면(MANUAL 보호) 쓸모없는 MasterProduct를 만들지 않는다.
                 if (confirmed > 0) {
                     masterProductRepository.findByCompany_IdAndProductGroupId(companyId, mappedProductCode)
                             .orElseGet(() -> masterProductRepository.save(
@@ -180,11 +160,7 @@ public class ChannelProductBatchService {
         return matchedCount;
     }
 
-    /**
-     * review_queue.csv(보류 판정 상품 쌍)는 자동 확정하지 않고 ProductMappingReviewItem으로 저장해
-     * 사람이 별도 화면/API에서 확인·resolve 처리하도록 한다.
-     * 두 상품이 서로 다른 채널에 속할 수 있어 Company 단위로 저장한다.
-     */
+    // review_queue.csv(보류 판정)는 자동 확정하지 않고 ProductMappingReviewItem으로 저장 (사람이 별도 resolve)
     @Transactional
     public int importReviewQueue(Long companyId, Long usersChannelKey, MultipartFile file) {
         UsersChannel usersChannel = getOwnedUsersChannelOrThrow(usersChannelKey, companyId);
@@ -241,11 +217,7 @@ public class ChannelProductBatchService {
         }
     }
 
-    /**
-     * 엑셀 등에서 저장한 CSV는 앞에 보이지 않는 UTF-8 BOM(EF BB BF)이 붙는 경우가 많다.
-     * BOM이 그대로 남으면 첫 헤더("variant_row_id" 등) 앞에 붙어버려 정확한 컬럼명 매칭이
-     * 실패하므로(Mapping for variant_row_id not found), 파싱 전에 미리 걷어낸다.
-     */
+    // 엑셀 저장 CSV에 붙는 UTF-8 BOM을 파싱 전에 제거 (안 지우면 첫 헤더 매칭 실패)
     private InputStream stripBom(InputStream in) throws IOException {
         PushbackInputStream pushbackInputStream = new PushbackInputStream(in, 3);
         byte[] bom = new byte[3];

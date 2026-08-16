@@ -28,7 +28,7 @@ public class ChannelSyncLogController {
         return ResponseEntity.ok(channelSyncLogService.getSyncLogs(principal.getCompanyId(), channelType, pageable));
     }
 
-    // 자정 폴링을 안 기다리고 즉시 확인하는 수동 트리거. (삭제 가능)
+    // 자정 폴링을 안 기다리고 즉시 확인하는 수동 트리거.
     @PostMapping("/poll")
     public ResponseEntity<Void> pollNow(@AuthenticationPrincipal UserPrincipal principal) {
         rawChannelSyncPollingService.pollForCompany(principal.getCompanyId());
