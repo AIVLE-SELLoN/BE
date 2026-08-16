@@ -3,7 +3,7 @@ package com.aivle.sellon.domain.channels.service.productmapping;
 import com.aivle.sellon.domain.channels.enums.MappingMethod;
 import com.aivle.sellon.rawdb.entity.RawMappedData;
 import com.aivle.sellon.rawdb.entity.RawProduct;
-import com.aivle.sellon.rawdb.repository.ChannelProductMappingRepository;
+import com.aivle.sellon.rawdb.repository.RawMappedDataRepository;
 import com.aivle.sellon.rawdb.repository.RawChannelProductRepository;
 import com.aivle.sellon.rawdb.repository.RawCsInquiryRepository;
 import com.aivle.sellon.rawdb.repository.RawReviewRepository;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 public class RawChannelProductMappingService {
 
     private final RawChannelProductRepository rawChannelProductRepository;
-    private final ChannelProductMappingRepository channelProductMappingRepository;
+    private final RawMappedDataRepository channelProductMappingRepository;
     private final RawCsInquiryRepository rawCsInquiryRepository;
     private final RawReviewRepository rawReviewRepository;
 

@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public interface ChannelProductMappingRepository extends JpaRepository<RawMappedData, Long> {
+public interface RawMappedDataRepository extends JpaRepository<RawMappedData, Long> {
     Optional<RawMappedData> findByVariantRowId(String variantRowId);
 
     List<RawMappedData> findByVariantRowIdIn(Collection<String> variantRowIds);
