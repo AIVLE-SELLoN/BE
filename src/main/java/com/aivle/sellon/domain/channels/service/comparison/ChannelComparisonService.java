@@ -27,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.YearMonth;
 import java.util.Comparator;
 import java.util.List;
@@ -54,6 +56,11 @@ public class ChannelComparisonService {
     private final RawReviewRepository rawReviewRepository;
     private final RawOrderRepository rawOrderRepository;
     private final ClassifiedItemAspectRepository classifiedItemAspectRepository;
+
+    /** 요약 지표(총 문의수/응답·해결 대체 지표/속성 분포/리뷰 감성) 산정 기준 - 화면 라벨 "최근 30일"과 일치시킨다. */
+    private static final int RECENT_DAYS = 30;
+    /** 월별 문의 추이 차트 산정 기준 - 화면 라벨 "최근 6개월"과 일치시킨다. */
+    private static final int TREND_MONTHS = 6;
 
     @Transactional(readOnly = true)
     public List<ChannelComparisonResponse> getComparisons(Long companyId) {
@@ -204,7 +211,8 @@ public class ChannelComparisonService {
     }
 
     private int computeTotalOrderQuantity(String channelType) {
-        return rawOrderRepository.findByChannelId(channelType).stream()
+        return rawOrderRepository.findByChannelIdAndOrderDateGreaterThanEqual(
+                        channelType, LocalDate.now().minusDays(RECENT_DAYS)).stream()
                 .mapToInt(RawOrder::getQuantity)
                 .sum();
     }
@@ -326,22 +334,29 @@ public class ChannelComparisonService {
     }
 
     private InquiryStats computeInquiryStats(String channelType) {
-        List<RawCs> inquiries = rawCsInquiryRepository.findByChannelId(channelType);
+        OffsetDateTime now = OffsetDateTime.now();
+        // 월별 추이(최근 6개월)에 필요한 범위로 한 번만 조회하고, 총 문의수(최근 30일)는 그 안에서 다시 걸러낸다.
+        List<RawCs> inquiries = rawCsInquiryRepository.findByChannelIdAndInquiredAtGreaterThanEqual(
+                channelType, now.minusMonths(TREND_MONTHS));
 
         Map<YearMonth, Integer> countsByMonth = new TreeMap<>();
+        int totalCount = 0;
+        OffsetDateTime recentCutoff = now.minusDays(RECENT_DAYS);
         for (RawCs inquiry : inquiries) {
             if (inquiry.getInquiredAt() == null) {
                 continue;
             }
             YearMonth yearMonth = YearMonth.from(inquiry.getInquiredAt());
             countsByMonth.merge(yearMonth, 1, Integer::sum);
+            if (!inquiry.getInquiredAt().isBefore(recentCutoff)) {
+                totalCount++;
+            }
         }
 
         List<ChannelComparisonClient.MonthlyCount> monthlyCounts = countsByMonth.entrySet().stream()
                 .map(e -> new ChannelComparisonClient.MonthlyCount(e.getKey().toString(), e.getValue()))
                 .toList();
 
-        int totalCount = inquiries.size();
         Double changeRate = computeChangeRate(countsByMonth);
 
         return new InquiryStats(totalCount, changeRate, monthlyCounts);
@@ -363,7 +378,8 @@ public class ChannelComparisonService {
     }
 
     private ReviewStats computeReviewStats(String channelType) {
-        List<RawReview> reviews = rawReviewRepository.findByChannelId(channelType);
+        List<RawReview> reviews = rawReviewRepository.findByChannelIdAndCreatedAtGreaterThanEqual(
+                channelType, OffsetDateTime.now().minusDays(RECENT_DAYS));
 
         int positive = 0;
         int neutral = 0;
@@ -402,7 +418,8 @@ public class ChannelComparisonService {
      * (분류 커버리지 문제 - worker 쪽 dead-letter/coverage 로그로 별도 확인 필요한 영역).
      */
     private List<ChannelComparisonClient.InquiryTypeCount> computeInquiryTypeCounts(String channelType) {
-        List<String> inquiryIds = rawCsInquiryRepository.findByChannelId(channelType).stream()
+        List<String> inquiryIds = rawCsInquiryRepository
+                .findByChannelIdAndInquiredAtGreaterThanEqual(channelType, OffsetDateTime.now().minusDays(RECENT_DAYS)).stream()
                 .map(RawCs::getId)
                 .toList();
 
