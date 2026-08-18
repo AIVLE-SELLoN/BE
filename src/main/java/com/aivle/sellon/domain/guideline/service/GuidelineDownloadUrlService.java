@@ -29,7 +29,14 @@ public class GuidelineDownloadUrlService {
         if (!isAvailable(meta))
             return null;
 
-        return s3PresignedUrlService.generateDownloadUrl(meta.getS3FullKey(), Duration.ofMillis(downloadUrlExpireMs));
+        Duration expiration = Duration.ofMillis(downloadUrlExpireMs);
+        String originalFileName = meta.getOriginalFileName();
+
+        // S3 객체명은 UUID라, 원본 파일명이 있으면 그 이름으로 내려받게 한다
+        if (originalFileName == null || originalFileName.isBlank())
+            return s3PresignedUrlService.generateDownloadUrl(meta.getS3FullKey(), expiration);
+
+        return s3PresignedUrlService.generateDownloadUrl(meta.getS3FullKey(), originalFileName, expiration);
     }
 
     /** @return 파일이 아직 S3에 남아있어 다운로드/메일 전송이 가능하면 true */
