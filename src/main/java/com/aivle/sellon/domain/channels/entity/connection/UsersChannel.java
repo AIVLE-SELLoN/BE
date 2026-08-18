@@ -8,12 +8,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 회사가 특정 채널(쿠팡/지그재그/네이버 등)에 연동한 기록.
- * 채널 연동은 회사 단위 리소스라 company로 테넌트를 구분한다(같은 회사면 ROOT/MEMBER 누구나 조회 가능).
- * 연동 자체는 ROOT 권한을 가진 계정만 수행할 수 있다 (ChannelService에서 검증).
- * (company_id, channel_type) 조합은 유니크해야 한다 - 동시 연동 요청으로 인한 중복 행 생성을 DB 레벨에서 방지.
- */
+/** 회사가 채널(쿠팡/지그재그/네이버)에 연동한 기록 - company 단위 테넌트, 연동은 ROOT만 가능(검증은 ChannelService), (company_id, channel_type) 유니크로 DB 레벨 중복 방지. */
 @Entity
 @Table(
         name = "users_channel",
@@ -56,9 +51,5 @@ public class UsersChannel extends BaseEntity {
 
     public void updateStatus(ConnectionStatus connectionStatus) {
         this.connectionStatus = connectionStatus;
-    }
-
-    public void updateChannelCode(String channelCode) {
-        this.channelCode = channelCode;
     }
 }

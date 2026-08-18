@@ -7,13 +7,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.Optional;
 
-/**
- * 네이버 OAuth state(CSRF 방지용 임시 토큰)를 Redis에 저장.
- * 인스턴스 로컬 메모리(ConcurrentHashMap)에 두면 여러 인스턴스 환경에서 authorize와 callback이
- * 서로 다른 인스턴스로 라우팅될 때 실패하고, 서버가 재시작되면 진행 중이던 인증이 전부 끊긴다.
- * 또한 콜백이 끝내 오지 않은 state가 영원히 안 지워지는 문제(메모리 누수 + 만료되지 않는 토큰)도
- * 있어서, 이미 다른 곳(RefreshTokenRedisService 등)에서 쓰고 있는 Redis에 TTL을 걸어 저장한다.
- */
+/** 네이버 OAuth state(CSRF 방지용 임시 토큰)를 Redis에 TTL로 저장 - 로컬 메모리는 다중 인스턴스/재시작/만료 처리에 취약해서 제외. */
 @Service
 @RequiredArgsConstructor
 public class NaverOAuthStateService {
