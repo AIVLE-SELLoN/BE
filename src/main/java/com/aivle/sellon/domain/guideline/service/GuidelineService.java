@@ -4,10 +4,14 @@ import com.aivle.sellon.domain.company.entity.Company;
 import com.aivle.sellon.domain.company.exception.CompanyNotFoundException;
 import com.aivle.sellon.domain.company.repository.CompanyRepository;
 import com.aivle.sellon.domain.guideline.dto.message.GuidelinePayload;
+import com.aivle.sellon.domain.guideline.dto.response.GuidelineDetailResponse;
 import com.aivle.sellon.domain.guideline.dto.response.GuidelineListItemResponse;
 import com.aivle.sellon.domain.guideline.entity.Guideline;
+import com.aivle.sellon.domain.guideline.entity.GuidelineApproval;
 import com.aivle.sellon.domain.guideline.entity.GuidelineSummary;
 import com.aivle.sellon.domain.guideline.enums.GuidelineAvailability;
+import com.aivle.sellon.domain.guideline.exception.GuidelineNotFoundException;
+import com.aivle.sellon.domain.guideline.repository.GuidelineApprovalRepository;
 import com.aivle.sellon.domain.guideline.repository.GuidelineRepository;
 import com.aivle.sellon.domain.guideline.repository.GuidelineSummaryRepository;
 import com.aivle.sellon.global.common.dto.CursorPageResponse;
@@ -39,6 +43,7 @@ public class GuidelineService {
 
     private final GuidelineRepository guidelineRepository;
     private final GuidelineSummaryRepository guidelineSummaryRepository;
+    private final GuidelineApprovalRepository guidelineApprovalRepository;
     private final CompanyRepository companyRepository;
     private final GuidelineDownloadUrlService guidelineDownloadUrlService;
     private final CursorUtils cursorUtils;
@@ -65,6 +70,24 @@ public class GuidelineService {
                 : null;
 
         return new CursorPageResponse<>(items, nextCursor, hasNext);
+    }
+
+    /**
+     * 상세 페이지용 단건 조회. PDF는 다운로드가 아닌 인라인 뷰어 URL로 내려준다.
+     */
+    public GuidelineDetailResponse getGuidelineDetail(UserPrincipal principal, String guidelineId) {
+        Guideline guideline = guidelineRepository.findByCompanyIdAndGuidelineId(principal.getCompanyId(), guidelineId)
+                .orElseThrow(GuidelineNotFoundException::new);
+
+        GuidelineSummary summary = guidelineSummaryRepository.findByGuidelineId(guideline.getId())
+                .orElseThrow(GuidelineNotFoundException::new);
+
+        GuidelineApproval approval = guidelineApprovalRepository.findByGuidelineId(guideline.getId())
+                .orElse(null);
+
+        String downloadUrl = guidelineDownloadUrlService.generateInline(guideline.getPdfS3Meta());
+
+        return GuidelineDetailResponse.of(summary, resolveAvailability(guideline), downloadUrl, approval);
     }
 
     private GuidelineAvailability resolveAvailability(Guideline guideline) {
