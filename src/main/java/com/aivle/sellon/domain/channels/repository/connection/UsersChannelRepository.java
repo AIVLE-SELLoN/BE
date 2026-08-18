@@ -13,6 +13,8 @@ import java.util.Optional;
 public interface UsersChannelRepository extends JpaRepository<UsersChannel, Long> {
     Optional<UsersChannel> findByCompany_IdAndChannelType(Long companyId, String channelType);
 
+    List<UsersChannel> findByCompany_Id(Long companyId);
+
     List<UsersChannel> findByConnectionStatus(ConnectionStatus connectionStatus);
 
     List<UsersChannel> findByCompany_IdAndConnectionStatus(Long companyId, ConnectionStatus connectionStatus);
