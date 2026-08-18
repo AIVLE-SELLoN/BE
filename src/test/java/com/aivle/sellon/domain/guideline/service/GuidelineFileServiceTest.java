@@ -122,18 +122,19 @@ class GuidelineFileServiceTest {
     @Test
     @DisplayName("요청한 size보다 많이 조회되면 초과분을 잘라내고 다음 커서를 준다")
     void paginatesWithCursor() {
-        // id 내림차순이라 페이지에 남는 first가 더 최신이고, 다음 커서는 잘라낸 페이지의 마지막 항목에서 나온다
-        Guideline first = guideline(meta("a.pdf"));
-        Guideline second = guideline(meta("b.pdf"));
-        ReflectionTestUtils.setField(first, "id", 9L);
-        ReflectionTestUtils.setField(second, "id", 5L);
-        when(cursorUtils.toId(null)).thenReturn(null);
-        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, null, 2))
+        // pdfS3Meta.createdAt 내림차순이라 페이지에 남는 first가 더 최신이고,
+        // 다음 커서는 잘라낸 페이지의 마지막 항목의 createdAt에서 나온다
+        LocalDateTime firstCreatedAt = LocalDateTime.of(2026, 6, 1, 0, 0);
+        LocalDateTime secondCreatedAt = LocalDateTime.of(2026, 5, 1, 0, 0);
+        Guideline first = guideline(meta("a.pdf", firstCreatedAt));
+        Guideline second = guideline(meta("b.pdf", secondCreatedAt));
+        when(cursorUtils.toLocalDateTime(null)).thenReturn(null);
+        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, null, null, 2))
                 .thenReturn(List.of(first, second));
         when(guidelineDownloadUrlService.isAvailable(any())).thenReturn(true);
-        when(cursorUtils.toCursor(9L)).thenReturn("next-cursor");
+        when(cursorUtils.toCursor(firstCreatedAt)).thenReturn("next-cursor");
 
-        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 1);
+        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 1, null);
 
         assertEquals(1, response.content().size());
         assertTrue(response.hasNext());
@@ -143,30 +144,43 @@ class GuidelineFileServiceTest {
     @Test
     @DisplayName("마지막 페이지에서는 다음 커서를 주지 않는다")
     void marksLastPage() {
-        when(cursorUtils.toId(null)).thenReturn(null);
-        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, null, 21))
+        when(cursorUtils.toLocalDateTime(null)).thenReturn(null);
+        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, null, null, 21))
                 .thenReturn(List.of(guideline(meta("a.pdf"))));
         when(guidelineDownloadUrlService.isAvailable(any())).thenReturn(true);
 
-        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 20);
+        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 20, null);
 
         assertEquals(1, response.content().size());
         assertFalse(response.hasNext());
         assertNull(response.nextCursor());
-        verify(cursorUtils, never()).toCursor(anyLong());
+        verify(cursorUtils, never()).toCursor(any(LocalDateTime.class));
     }
 
     @Test
     @DisplayName("보관 기한이 지난 파일은 목록에서 EXPIRED로 보여 재생성이 필요함을 알린다")
     void marksExpiredFileInList() {
-        when(cursorUtils.toId(null)).thenReturn(null);
-        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, null, 21))
+        when(cursorUtils.toLocalDateTime(null)).thenReturn(null);
+        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, null, null, 21))
                 .thenReturn(List.of(guideline(meta("a.pdf"))));
         when(guidelineDownloadUrlService.isAvailable(any())).thenReturn(false);
 
-        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 20);
+        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 20, null);
 
         assertEquals(GuidelineAvailability.EXPIRED, response.content().get(0).status());
+    }
+
+    @Test
+    @DisplayName("검색어를 주면 리포지토리에 그대로 전달한다")
+    void passesSearchQueryToRepository() {
+        when(cursorUtils.toLocalDateTime(null)).thenReturn(null);
+        when(guidelineRepository.findAllWithFileByCompanyId(COMPANY_ID, "coupang", null, 21))
+                .thenReturn(List.of(guideline(meta("a.pdf"))));
+        when(guidelineDownloadUrlService.isAvailable(any())).thenReturn(true);
+
+        CursorPageResponse<GuidelineFileResponse> response = guidelineFileService.getFiles(principal, null, 20, "coupang");
+
+        assertEquals(1, response.content().size());
     }
 
     private Guideline guideline(PdfS3Meta meta) {
@@ -180,12 +194,16 @@ class GuidelineFileServiceTest {
     }
 
     private PdfS3Meta meta(String newFileName) {
+        return meta(newFileName, LocalDateTime.of(2026, 5, 28, 14, 21));
+    }
+
+    private PdfS3Meta meta(String newFileName, LocalDateTime createdAt) {
         return PdfS3Meta.of(
                 "SLN-1943576218438216", "마르디 메크르디", "sellon-reports",
                 "reports/cs-guideline/SLN-1943576218438216/2026/05/",
                 "cs-guideline_202605_ALT-20260528-P001-COUPANG.pdf", newFileName,
                 "reports/cs-guideline/SLN-1943576218438216/2026/05/" + newFileName,
-                24034L, null, LocalDateTime.of(2026, 5, 28, 14, 21), null,
+                24034L, null, createdAt, null,
                 LocalDateTime.of(2026, 6, 4, 14, 21));
     }
 }

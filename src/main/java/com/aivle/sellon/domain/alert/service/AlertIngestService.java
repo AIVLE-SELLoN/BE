@@ -39,7 +39,9 @@ public class AlertIngestService {
     public void ingest(AlertAnalyzedPayload payload, String companyKey) {
         Company company = findCompany(companyKey);
 
-        DetectionAlert existing = detectionAlertRepository.findByAlertCode(payload.alertId()).orElse(null);
+        DetectionAlert existing = detectionAlertRepository
+                .findByCompanyIdAndAlertCode(company.getId(), payload.alertId())
+                .orElse(null);
         if (existing != null) {
             update(existing, payload);
             return;
