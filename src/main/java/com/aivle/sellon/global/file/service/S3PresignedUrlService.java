@@ -20,20 +20,34 @@ public class S3PresignedUrlService {
     @Value("${cloud.aws.s3.report.bucket}")
     private String bucket;
 
-    public String generateDownloadUrl(String key, Duration expiration) {
-        return presign(GetObjectRequest.builder().bucket(bucket).key(key).build(), expiration);
-    }
-
     /**
-     * S3에 저장된 객체명은 UUID라 그대로 받으면 사용자가 알아볼 수 없다.
-     * 내려받을 때 원본 파일명이 그대로 붙도록 응답 헤더를 지정해 발급한다.
+     * 업로드 시점 메타데이터와 무관하게 항상 인라인 PDF로 열리도록 강제한다. (월간 리포트 뷰어 전용)
+     * 다운로드로 받게 하려면 파일명을 지정하는 {@link #generateDownloadUrl(String, String, Duration)}을 쓴다.
      */
-    public String generateDownloadUrl(String key, String fileName, Duration expiration) {
+    public String generateDownloadUrl(String key, Duration expiration) {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
                 .responseContentType("application/pdf")
                 .responseContentDisposition("inline")
+                .build();
+
+        return presign(getObjectRequest, expiration);
+    }
+
+    /**
+     * S3에 저장된 객체명은 UUID라 그대로 받으면 사용자가 알아볼 수 없다.
+     * 내려받을 때 원본 파일명이 그대로 붙도록 응답 헤더를 지정해 발급한다.
+     * inline이 아니라 반드시 attachment로 받아야 한다 — 1인자 오버로드(뷰어용 inline 강제)와 혼동해 합치지 말 것.
+     */
+    public String generateDownloadUrl(String key, String fileName, Duration expiration) {
+        // attachment 응답 헤더는 이 한 줄이 전부다 — 1인자 오버로드처럼 inline을 강제하지 않는다
+        String disposition = contentDisposition(fileName);
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .responseContentDisposition(disposition)
                 .build();
 
         return presign(getObjectRequest, expiration);
