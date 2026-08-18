@@ -21,6 +21,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,6 +32,10 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Table(
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_detection_alert_company_code",
+                        columnNames = {"company_id", "alert_code"})
+        },
         indexes = {
                 @Index(name = "idx_detection_alert_company_status", columnList = "company_id, alert_status"),
                 @Index(name = "idx_detection_alert_detected_at", columnList = "detected_at"),
@@ -45,13 +50,13 @@ public class DetectionAlert extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 32)
+    @Column(nullable = false, length = 72)
     private String alertCode;
 
     @Column(nullable = false)
     private LocalDateTime detectedAt;
 
-    @Column(length = 32)
+    @Column(length = 72)
     private String updatesAlertCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
