@@ -33,7 +33,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private static final String[] PERMIT_ALL_PATHS = {
-            "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
+            "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/health/**"
     };
 
     private final JwtProvider jwtProvider;

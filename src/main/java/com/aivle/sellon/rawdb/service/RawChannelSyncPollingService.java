@@ -36,10 +36,14 @@ public class RawChannelSyncPollingService {
     }
 
     // 자정 크론을 안 기다리고 즉시 확인하고 싶을 때(수동 트리거) 쓰는 진입점.
-    public void pollForCompany(Long companyId) {
+    // channelType이 없으면 회사의 연동된 채널 전부(쿠팡/네이버/지그재그)를 한꺼번에 폴링한다.
+    public void pollForCompany(Long companyId, String channelType) {
         List<UsersChannel> connectedChannels =
                 usersChannelRepository.findByCompany_IdAndConnectionStatus(companyId, ConnectionStatus.CONNECTED);
         for (UsersChannel usersChannel : connectedChannels) {
+            if (channelType != null && !channelType.isBlank() && !channelType.equals(usersChannel.getChannelType())) {
+                continue;
+            }
             pollOne(usersChannel);
         }
     }
