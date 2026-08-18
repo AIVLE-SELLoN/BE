@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+/** 채널 연동(쿠팡/지그재그=API 키, 네이버=OAuth) 처리 - ROOT 전용, 데이터 주입 이벤트는 발행하지 않음(Mock Producer가 CSV 독립 재생). */
 @Service
 @RequiredArgsConstructor
 public class ChannelService {
@@ -59,11 +60,7 @@ public class ChannelService {
         return ChannelConnectionResponse.from(usersChannel);
     }
 
-    /**
-     * (company, channelType) 조합을 INSERT ... ON CONFLICT로 원자적으로 upsert한 뒤 조회한다.
-     * PostgreSQL 레벨에서 한 문장으로 처리되기 때문에, 동시에 같은 조합으로 연동 요청이 들어와도
-     * 중복 행이 생기거나 트랜잭션이 깨지는 일 없이 항상 하나의 행으로 수렴한다.
-     */
+    /** (company, channelType) 조합을 upsert 후 조회 - 동시 요청에도 중복 행 없이 하나로 수렴. */
     private UsersChannel findOrCreate(Long companyId, String channelType, String channelCode) {
         usersChannelRepository.upsertConnected(companyId, channelType, channelCode);
         return usersChannelRepository.findByCompany_IdAndChannelType(companyId, channelType)
