@@ -50,6 +50,18 @@ spring:
 # 로컬 기본값은 AI 서비스 로컬 실행 포트(uvicorn app.main:app --reload 기준 8000).
 ai-service:
   base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
+# 기본 health는 DB, RabbitMQ, Redis를 모두 집계하므로 의존 서비스가 일시적으로 끊기면 503을 반환한다.
+# 애플리케이션 자체는 정상이어도 liveness에서 이를 사용하면 kubelet이 파드를 재시작하므로 외부 의존성을 포함하지 않는 liveness group을 사용한다.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
 
 file:
   storage-type: local   # local | s3 (S3 전환 시 s3로 변경, 관련 설정 추가 필요)
