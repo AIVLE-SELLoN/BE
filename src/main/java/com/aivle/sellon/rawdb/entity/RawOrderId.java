@@ -10,13 +10,9 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @EqualsAndHashCode
 public class RawOrderId implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String channelId;
     private String channelProductId;
     private LocalDate orderDate;
-
-    public RawOrderId(String channelId, String channelProductId, LocalDate orderDate) {
-        this.channelId = channelId;
-        this.channelProductId = channelProductId;
-        this.orderDate = orderDate;
-    }
 }

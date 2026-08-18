@@ -5,12 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 public interface RawCsInquiryRepository extends JpaRepository<RawCs, String> {
     @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
-    List<RawCs> findByChannelId(String channelId);
-
-    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
-    long countByChannelIdAndCreatedAtAfter(String channelId, OffsetDateTime createdAt);
+    long countByChannelIdAndInquiredAtAfter(String channelId, OffsetDateTime inquiredAt);
 }
