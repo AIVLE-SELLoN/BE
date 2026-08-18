@@ -1,15 +1,23 @@
 package com.aivle.sellon.domain.channels.repository.connection;
 
 import com.aivle.sellon.domain.channels.entity.connection.UsersChannel;
+import com.aivle.sellon.domain.channels.enums.ConnectionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UsersChannelRepository extends JpaRepository<UsersChannel, Long> {
     Optional<UsersChannel> findByCompany_IdAndChannelType(Long companyId, String channelType);
+
+    List<UsersChannel> findByCompany_Id(Long companyId);
+
+    List<UsersChannel> findByConnectionStatus(ConnectionStatus connectionStatus);
+
+    List<UsersChannel> findByCompany_IdAndConnectionStatus(Long companyId, ConnectionStatus connectionStatus);
 
     /**
      * connect/naverCallback의 "조회 후 없으면 생성"을 PostgreSQL의 INSERT ... ON CONFLICT로 원자적으로 처리한다.

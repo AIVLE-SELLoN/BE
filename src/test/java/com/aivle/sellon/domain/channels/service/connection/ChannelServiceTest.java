@@ -166,9 +166,9 @@ class ChannelServiceTest {
         when(mockNaverOAuthClient.buildAuthorizationUrl(anyString()))
                 .thenReturn("https://mock-naver-oauth.local/authorize?state=abc");
 
-        String url = channelService.naverAuthorize(principal);
+        var response = channelService.naverAuthorize(principal);
 
-        assertEquals("https://mock-naver-oauth.local/authorize?state=abc", url);
+        assertEquals("https://mock-naver-oauth.local/authorize?state=abc", response.authorizationUrl());
         verify(naverOAuthStateService).save(anyString(), eq(10L));
     }
 

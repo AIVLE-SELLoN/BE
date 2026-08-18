@@ -46,6 +46,10 @@ spring:
           multiplier: 1.0       # 고정 간격 (지수 증가 없음)
           max-interval: 2s
 
+# AI 서비스(Agent1/2/3, FastAPI)는 로컬/배포 모두 URL 형식이 같아 프로필 공통으로 둔다.
+# 로컬 기본값은 AI 서비스 로컬 실행 포트(uvicorn app.main:app --reload 기준 8000).
+ai-service:
+  base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
 # 기본 health는 DB, RabbitMQ, Redis를 모두 집계하므로 의존 서비스가 일시적으로 끊기면 503을 반환한다.
 # 애플리케이션 자체는 정상이어도 liveness에서 이를 사용하면 kubelet이 파드를 재시작하므로 외부 의존성을 포함하지 않는 liveness group을 사용한다.
 management:
@@ -110,3 +114,9 @@ raw-db:
     driver-class-name: org.postgresql.Driver
     username: postgres
     password:
+
+channel:
+  sync:
+    # raw db(cs/reviews/orders) 신규 건수를 채널별로 훑어 "채널 연동 이력" 로그를 남기는 주기.
+    # 이력 화면 용도라 실시간성보다 로그 개수 관리가 우선 - 매일 자정 한 번, 채널당 하루 최대 1건.
+    polling-cron: "0 0 0 * * *"
