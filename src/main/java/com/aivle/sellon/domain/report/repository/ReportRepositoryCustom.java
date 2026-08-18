@@ -10,6 +10,8 @@ public interface ReportRepositoryCustom {
 
     Optional<Report> findByCompanyIdAndReportId(Long companyId, String reportId);
 
+    Optional<Report> findLatestByCompanyId(Long companyId);
+
     /**
      * 리포트 행을 락과 함께 가져온다. 같은 report_id에 대한 메일 예약 생성이
      * 여러 인스턴스에서 동시에 들어와도 한 번에 하나씩만 처리되게 하기 위함이다.
