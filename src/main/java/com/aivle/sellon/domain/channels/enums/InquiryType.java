@@ -3,10 +3,7 @@ package com.aivle.sellon.domain.channels.enums;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-/**
- * CS 문의 속성(aspect) 유형. Agent1 분류 결과의 6종 aspect 값(색상/사이즈/소재/파손/오배송/기타)에 대응.
- * JSON 직렬화/역직렬화 시에는 한글 라벨을 그대로 사용해 기존 API 응답 포맷을 유지한다.
- */
+/** CS 문의 속성(aspect) 유형 - Agent1 분류 결과 6종에 대응, JSON 직렬화는 한글 라벨 그대로 사용. */
 public enum InquiryType {
     COLOR("색상"),
     SIZE("사이즈"),

@@ -7,5 +7,5 @@ import java.util.Optional;
 
 public interface DetectionAlertRepository extends JpaRepository<DetectionAlert, Long> {
 
-    Optional<DetectionAlert> findByAlertCode(String alertCode);
+    Optional<DetectionAlert> findByCompanyIdAndAlertCode(Long companyId, String alertCode);
 }

@@ -98,6 +98,10 @@ public class ChannelProductBatchService {
                 products.stream().map(RawProduct::getVariantRowId).toList());
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
+        // 엑셀이 UTF-8을 시스템 기본 인코딩(CP949)으로 오인해 한글이 깨지는 것을 막기 위해 BOM을 붙인다.
+        out.write(0xEF);
+        out.write(0xBB);
+        out.write(0xBF);
         try (OutputStreamWriter writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
              CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT.builder().setHeader(EXPORT_HEADERS).build())) {
             for (RawProduct p : products) {

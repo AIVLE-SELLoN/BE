@@ -8,14 +8,10 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 public interface RawCsInquiryRepository extends JpaRepository<RawCs, String> {
     @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
-    List<RawCs> findByChannelId(String channelId);
-
-    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
-    long countByChannelIdAndCreatedAtAfter(String channelId, OffsetDateTime createdAt);
+    long countByChannelIdAndInquiredAtAfter(String channelId, OffsetDateTime inquiredAt);
 
     // 상품 매핑 소급 반영 계약 ①/④: (channel, channelProductId) 기준 과거 cs 행 전체를 소급 갱신 (기간 제한 없음)
     @Modifying

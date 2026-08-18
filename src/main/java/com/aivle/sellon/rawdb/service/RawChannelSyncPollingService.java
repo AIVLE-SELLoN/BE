@@ -54,7 +54,7 @@ public class RawChannelSyncPollingService {
         String channelId = usersChannel.getChannelType();
 
         try {
-            long csCount = rawCsInquiryRepository.countByChannelIdAndCreatedAtAfter(channelId, since);
+            long csCount = rawCsInquiryRepository.countByChannelIdAndInquiredAtAfter(channelId, since);
             long reviewCount = rawReviewRepository.countByChannelIdAndCreatedAtAfter(channelId, since);
             long orderCount = rawOrderRepository.countByChannelIdAndCreatedAtAfter(channelId, since);
             long total = csCount + reviewCount + orderCount;

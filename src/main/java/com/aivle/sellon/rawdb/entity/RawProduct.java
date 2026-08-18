@@ -4,18 +4,16 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.hibernate.annotations.Immutable;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 // raw db(products) 채널 상품 원본. 상품 매핑용 컨슈머가 적재, BE는 읽기 전용. PK는 variant_row_id.
 @Entity
+@Immutable
 @Table(name = "products")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EntityListeners(AuditingEntityListener.class)
 public class RawProduct {
 
     // 옵션 조합 단위 자연키 (input_channel_products.csv의 variant_row_id와 대응, 별도 PK 없음)
@@ -48,13 +46,11 @@ public class RawProduct {
     @Column(name = "original_price")
     private Long originalPrice;
 
-    @CreatedDate
-    @Column(name = "fetched_at", nullable = false, updatable = false)
-    private LocalDateTime fetchedAt;
+    @Column(name = "fetched_at", nullable = false)
+    private OffsetDateTime fetchedAt;
 
-    @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     public static RawProduct of(Long usersChannelKey, String variantRowId, String channelId,
                                 String channelProductId, String channelProductName,
