@@ -6,19 +6,13 @@ spring:
     active: local
 
   jwt:
-    secret: pT+HzrT8gQkRpGJzxrfEFiS2yZPLClVhRxn3GuRIq2U=
     tokens:
       expire:
         access_token: 1800000
         refresh_token: 2592000000
 
-  cursor:
-    secret: pL2URxS9qn80k2DLiSwZ4CplPqXOsLoAWFnVrf0YYlY=
-
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
@@ -75,13 +69,6 @@ sellon:
       email: ${ADMIN_SEED_EMAIL:}
       password: ${ADMIN_SEED_PASSWORD:}
       name: ${ADMIN_SEED_NAME:관리자}
-# OpenSearch는 로컬/배포 모두 환경변수로만 접속하는 구조라 프로필 공통으로 둔다
-aws:
-  opensearch:
-    host: ${AWS_OPENSEARCH_HOST}
-    region: ${AWS_OPENSEARCH_REGION:ap-northeast-2}
-    access-key: ${AWS_OPENSEARCH_ACCESS_KEY}
-    secret-key: ${AWS_OPENSEARCH_SECRET_KEY}
 
 report:
   download-url:
@@ -102,18 +89,6 @@ cloud:
     credentials:
       access-key: ${AWS_ACCESS_KEY}
       secret-key: ${AWS_SECRET_KEY}
-    opensearch:
-      host: ${AWS_OPENSEARCH_HOST}
-      region: ${AWS_OPENSEARCH_REGION:ap-northeast-2}
-      access-key: ${AWS_OPENSEARCH_ACCESS_KEY}
-      secret-key: ${AWS_OPENSEARCH_SECRET_KEY}
-
-raw-db:
-  datasource:
-    url: jdbc:postgresql://localhost:5433/raw_db
-    driver-class-name: org.postgresql.Driver
-    username: postgres
-    password:
 
 channel:
   sync:

@@ -1,4 +1,14 @@
 spring:
+  jwt:
+    secret: ${JWT_SECRET}
+
+  cursor:
+    secret: ${CURSOR_SECRET}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
   datasource:
     url: ${DB_URL}
     driver-class-name: org.postgresql.Driver
@@ -9,6 +19,10 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
+      # ElastiCache 전송 중 암호화가 켜져 있어 AUTH 토큰 + TLS가 필수다.
+      password: ${REDIS_AUTH_TOKEN}
+      ssl:
+        enabled: true
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
@@ -34,6 +48,11 @@ spring:
     listener:
       simple:
         prefetch: 20
+
+# application.yaml의 기본값(localhost:8000)이 prod에서도 그대로 쓰일 수 있어(env var 미설정 시)
+# 조용히 로컬을 가리키는 대신 기동 시점에 실패하도록 기본값 없이 필수로 받는다.
+ai-service:
+  base-url: ${AI_SERVICE_BASE_URL}
 
 cloud:
   aws:
