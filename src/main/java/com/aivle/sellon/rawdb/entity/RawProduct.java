@@ -38,10 +38,10 @@ public class RawProduct {
     private String channelOptionName;
 
     @Column(name = "sale_price")
-    private Long salePrice;
+    private Integer salePrice;
 
     @Column(name = "original_price")
-    private Long originalPrice;
+    private Integer originalPrice;
 
     @Column(name = "fetched_at", nullable = false)
     private OffsetDateTime fetchedAt;
@@ -52,7 +52,7 @@ public class RawProduct {
     public static RawProduct of(String variantRowId, String channelId,
                                 String channelProductId, String channelProductName,
                                 String optionGroupNames, String channelOptionName,
-                                Long salePrice, Long originalPrice) {
+                                Integer salePrice, Integer originalPrice) {
         RawProduct entity = new RawProduct();
         entity.variantRowId = variantRowId;
         entity.channelId = channelId;
