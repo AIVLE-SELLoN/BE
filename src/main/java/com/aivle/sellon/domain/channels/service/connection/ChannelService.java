@@ -4,10 +4,12 @@ import com.aivle.sellon.domain.channels.dto.request.ChannelConnectRequest;
 import com.aivle.sellon.domain.channels.dto.response.ChannelConnectionResponse;
 import com.aivle.sellon.domain.channels.dto.response.NaverAuthorizeResponse;
 import com.aivle.sellon.domain.channels.entity.connection.UsersChannel;
+import com.aivle.sellon.domain.channels.enums.ConnectionStatus;
 import com.aivle.sellon.domain.channels.exception.connection.ChannelConnectNotAllowedException;
 import com.aivle.sellon.domain.channels.exception.connection.ChannelKeyFormatInvalidException;
 import com.aivle.sellon.domain.channels.exception.connection.NaverOAuthFailedException;
 import com.aivle.sellon.domain.channels.exception.connection.NaverOAuthStateInvalidException;
+import com.aivle.sellon.domain.channels.exception.connection.UsersChannelNotFoundException;
 import com.aivle.sellon.domain.channels.repository.connection.UsersChannelRepository;
 import com.aivle.sellon.domain.user.enums.Role;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
@@ -15,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 /** 채널 연동(쿠팡/지그재그=API 키, 네이버=OAuth) 처리 - ROOT 전용, 데이터 주입 이벤트는 발행하지 않음(Mock Producer가 CSV 독립 재생). */
@@ -37,6 +40,26 @@ public class ChannelService {
 
         UsersChannel usersChannel = findOrCreate(principal.getCompanyId(), request.channelType(), request.channelCode());
         return ChannelConnectionResponse.from(usersChannel);
+    }
+
+    // 새로고침해도 연동 상태가 유지되도록, 현재 회사가 가진 채널 연동 목록을 조회한다 (조회는 ROOT 아니어도 가능).
+    @Transactional(readOnly = true)
+    public List<ChannelConnectionResponse> getChannels(UserPrincipal principal) {
+        return usersChannelRepository.findByCompany_Id(principal.getCompanyId()).stream()
+                .map(ChannelConnectionResponse::from)
+                .toList();
+    }
+
+    // 연동 해제 - ROOT 전용. 행을 지우지 않고 상태만 DISCONNECTED로 바꾼다 (이력/재연동 시 upsert 재사용을 위해).
+    @Transactional
+    public void disconnect(UserPrincipal principal, String channelType) {
+        requireRoot(principal);
+
+        UsersChannel usersChannel = usersChannelRepository
+                .findByCompany_IdAndChannelType(principal.getCompanyId(), channelType)
+                .orElseThrow(UsersChannelNotFoundException::new);
+
+        usersChannel.updateStatus(ConnectionStatus.DISCONNECTED);
     }
 
     public NaverAuthorizeResponse naverAuthorize(UserPrincipal principal) {
