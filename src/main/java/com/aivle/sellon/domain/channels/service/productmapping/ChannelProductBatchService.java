@@ -74,8 +74,8 @@ public class ChannelProductBatchService {
                         record.get("channel_product_name"),
                         record.isMapped("option_group_names") ? record.get("option_group_names") : null,
                         record.isMapped("channel_option_name") ? record.get("channel_option_name") : null,
-                        parseIntegerOrNull(record, "sale_price"),
-                        parseIntegerOrNull(record, "original_price")
+                        parseIntOrNull(record, "sale_price"),
+                        parseIntOrNull(record, "original_price")
                 );
                 count++;
             }
@@ -206,7 +206,7 @@ public class ChannelProductBatchService {
         }
     }
 
-    private Integer parseIntegerOrNull(CSVRecord record, String column) {
+    private Integer parseIntOrNull(CSVRecord record, String column) {
         if (!record.isMapped(column)) {
             return null;
         }
