@@ -26,4 +26,10 @@ public interface RawReviewRepository extends JpaRepository<RawReview, String> {
             @Param("fromInclusive") OffsetDateTime fromInclusive,
             @Param("toExclusive") OffsetDateTime toExclusive
     );
+
+    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
+    List<RawReview> findByChannelId(String channelId);
+
+    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
+    long countByChannelIdAndCreatedAtAfter(String channelId, OffsetDateTime createdAt);
 }

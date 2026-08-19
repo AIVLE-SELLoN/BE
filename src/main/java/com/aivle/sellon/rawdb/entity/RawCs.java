@@ -1,9 +1,6 @@
 package com.aivle.sellon.rawdb.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,8 +10,8 @@ import java.time.OffsetDateTime;
 
 @Entity
 @Immutable
-@Getter
 @Table(name = "cs")
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RawCs {
 
@@ -31,12 +28,26 @@ public class RawCs {
     @Column(name = "channel_id")
     private String channelId;
 
-    @Column(name = "content")
+    @Column(name = "content", nullable = false)
     private String content;
 
-    @Column(name = "inquired_at")
+    @Column(name = "inquired_at", nullable = false)
     private OffsetDateTime inquiredAt;
 
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
+
+    public static RawCs of(String id, String channelProductId, String productGroupId,
+                           String channelId, String content, OffsetDateTime inquiredAt,
+                           OffsetDateTime createdAt) {
+        RawCs entity = new RawCs();
+        entity.id = id;
+        entity.channelProductId = channelProductId;
+        entity.productGroupId = productGroupId;
+        entity.channelId = channelId;
+        entity.content = content;
+        entity.inquiredAt = inquiredAt;
+        entity.createdAt = createdAt;
+        return entity;
+    }
 }

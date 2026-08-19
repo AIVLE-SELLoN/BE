@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface RawOrderRepository extends JpaRepository<RawOrder, RawOrderId> {
@@ -27,4 +28,10 @@ public interface RawOrderRepository extends JpaRepository<RawOrder, RawOrderId> 
             @Param("fromInclusive") LocalDate fromInclusive,
             @Param("toExclusive") LocalDate toExclusive
     );
+
+    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
+    List<RawOrder> findByChannelId(String channelId);
+
+    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
+    long countByChannelIdAndCreatedAtAfter(String channelId, OffsetDateTime createdAt);
 }

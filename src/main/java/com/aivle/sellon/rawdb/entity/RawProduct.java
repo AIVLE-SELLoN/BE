@@ -1,9 +1,6 @@
 package com.aivle.sellon.rawdb.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,10 +8,11 @@ import org.hibernate.annotations.Immutable;
 
 import java.time.OffsetDateTime;
 
+// raw db(products) 채널 상품 원본. 상품 매핑용 컨슈머가 적재, BE는 읽기 전용. PK는 variant_row_id.
 @Entity
 @Immutable
-@Getter
 @Table(name = "products")
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RawProduct {
 
@@ -22,13 +20,14 @@ public class RawProduct {
     @Column(name = "variant_row_id")
     private String variantRowId;
 
-    @Column(name = "channel_product_id")
-    private String channelProductId;
-
-    @Column(name = "channel_id")
+    @Column(name = "channel_id", nullable = false)
     private String channelId;
 
-    @Column(name = "channel_product_name")
+    // 같은 기본 상품의 옵션들을 묶는 채널 측 상품 식별자.
+    @Column(name = "channel_product_id", nullable = false)
+    private String channelProductId;
+
+    @Column(name = "channel_product_name", nullable = false)
     private String channelProductName;
 
     @Column(name = "option_group_names")
@@ -43,9 +42,25 @@ public class RawProduct {
     @Column(name = "original_price")
     private Integer originalPrice;
 
-    @Column(name = "fetched_at")
+    @Column(name = "fetched_at", nullable = false)
     private OffsetDateTime fetchedAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    public static RawProduct of(String variantRowId, String channelId,
+                                String channelProductId, String channelProductName,
+                                String optionGroupNames, String channelOptionName,
+                                Integer salePrice, Integer originalPrice) {
+        RawProduct entity = new RawProduct();
+        entity.variantRowId = variantRowId;
+        entity.channelId = channelId;
+        entity.channelProductId = channelProductId;
+        entity.channelProductName = channelProductName;
+        entity.optionGroupNames = optionGroupNames;
+        entity.channelOptionName = channelOptionName;
+        entity.salePrice = salePrice;
+        entity.originalPrice = originalPrice;
+        return entity;
+    }
 }

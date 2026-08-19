@@ -38,6 +38,7 @@ public class RawDataSourceConfig {
 
     @Bean
     public LocalContainerEntityManagerFactoryBean rawDbEntityManagerFactory(EntityManagerFactoryBuilder builder) {
+        // raw DB는 읽기 전용이라 ddl-auto를 validate로 고정해 BE가 스키마를 못 건드리게 한다.
         return builder
                 .dataSource(rawDbDataSource())
                 .packages("com.aivle.sellon.rawdb.entity")

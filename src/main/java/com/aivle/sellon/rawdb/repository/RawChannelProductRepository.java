@@ -1,0 +1,19 @@
+package com.aivle.sellon.rawdb.repository;
+
+import com.aivle.sellon.rawdb.entity.RawProduct;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface RawChannelProductRepository extends JpaRepository<RawProduct, String> {
+    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
+    List<RawProduct> findByChannelId(String channelId);
+
+    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
+    List<RawProduct> findByChannelIdAndChannelProductId(String channelId, String channelProductId);
+
+    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
+    Optional<RawProduct> findByVariantRowId(String variantRowId);
+}

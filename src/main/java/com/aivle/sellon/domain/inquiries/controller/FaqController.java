@@ -2,6 +2,7 @@ package com.aivle.sellon.domain.inquiries.controller;
 
 import com.aivle.sellon.domain.inquiries.dto.response.FaqResponse;
 import com.aivle.sellon.domain.inquiries.service.FaqService;
+import com.aivle.sellon.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +19,7 @@ public class FaqController {
     private final FaqService faqService;
 
     @GetMapping
-    public ResponseEntity<List<FaqResponse>> getAllFaqs() {
-        return ResponseEntity.ok(faqService.getAllFaqs());
+    public ResponseEntity<ApiResponse<List<FaqResponse>>> getAllFaqs() {
+        return ApiResponse.ok(faqService.getAllFaqs());
     }
 }
