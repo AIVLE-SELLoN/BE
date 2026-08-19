@@ -6,9 +6,7 @@ import com.aivle.sellon.domain.dashboard.dto.response.DashboardResponse;
 import com.aivle.sellon.domain.notification.repository.NotificationRepository;
 import com.aivle.sellon.global.security.principal.UserPrincipal;
 import com.aivle.sellon.rawdb.dto.ChannelMetricRow;
-import com.aivle.sellon.rawdb.repository.RawCsRepository;
-import com.aivle.sellon.rawdb.repository.RawOrderRepository;
-import com.aivle.sellon.rawdb.repository.RawReviewRepository;
+import com.aivle.sellon.rawdb.service.RawDashboardMetricReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,9 +33,7 @@ public class DashboardService {
     );
 
     private final NotificationRepository notificationRepository;
-    private final RawCsRepository rawCsRepository;
-    private final RawOrderRepository rawOrderRepository;
-    private final RawReviewRepository rawReviewRepository;
+    private final RawDashboardMetricReader rawDashboardMetricReader;
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboard(UserPrincipal principal, String period) {
@@ -48,20 +44,21 @@ public class DashboardService {
         OffsetDateTime timestampFromInclusive = fromInclusive.atStartOfDay(DASHBOARD_ZONE_ID).toOffsetDateTime();
         OffsetDateTime timestampToExclusive = toExclusive.atStartOfDay(DASHBOARD_ZONE_ID).toOffsetDateTime();
 
-        Map<String, Long> csCounts = rawCsRepository
-                .findCountsByChannel(timestampFromInclusive, timestampToExclusive)
+        RawDashboardMetricReader.RawDashboardMetrics metrics = rawDashboardMetricReader.read(
+                timestampFromInclusive, timestampToExclusive, fromInclusive, toExclusive);
+
+        Map<String, Long> csCounts = metrics.csCounts()
                 .stream()
                 .collect(Collectors.toMap(ChannelMetricRow.CsCount::getChannelId,
                         ChannelMetricRow.CsCount::getCount));
 
-        Map<String, Long> orderCounts = rawOrderRepository
-                .findTotalQuantitiesByChannel(fromInclusive, toExclusive)
+        Map<String, Long> orderCounts = metrics.orderQuantities()
                 .stream()
                 .collect(Collectors.toMap(ChannelMetricRow.OrderQuantity::getChannelId,
                         ChannelMetricRow.OrderQuantity::getTotalQuantity));
 
         Map<String, Double> averageRatings = new HashMap<>();
-        rawReviewRepository.findAverageRatingsByChannel(timestampFromInclusive, timestampToExclusive)
+        metrics.reviewRatings()
                 .forEach(row -> averageRatings.put(row.getChannelId(), row.getAvgRating()));
 
         List<ChannelSummaryResponse> channelSummary = DASHBOARD_CHANNELS.stream()
@@ -80,9 +77,6 @@ public class DashboardService {
 
     private int toPeriodDays(String period) {
         // 허용값 검증은 컨트롤러의 @Pattern이 담당한다. 여기서는 매핑만 한다.
-        if (period == null) {
-            return 7;
-        }
         return switch (period) {
             case "1D" -> 1;
             case "30D" -> 30;
