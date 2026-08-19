@@ -8,11 +8,6 @@ import org.hibernate.annotations.Immutable;
 
 import java.time.OffsetDateTime;
 
-/**
- * 「Raw DB 스키마 확정 (8/7)」§2-5 reviews. main server(우리) 소유·쓰기 대상. cs와 구조는
- * 같고 rating이 추가된다. cs와 달리 발생·적재 시각을 나누지 않고 created_at 하나다(§2-5).
- * id는 CSV의 review_id를 그대로 쓴다(§5-1 A안).
- */
 @Entity
 @Immutable
 @Table(name = "reviews")

@@ -29,6 +29,35 @@ public class GuidelineDownloadUrlService {
         if (!isAvailable(meta))
             return null;
 
+        Duration expiration = Duration.ofMillis(downloadUrlExpireMs);
+        return s3PresignedUrlService.generateDownloadUrl(meta.getS3FullKey(), displayFileName(meta), expiration);
+    }
+
+    /**
+     * S3 객체명은 UUID라 원본 파일명이 있으면 그 이름으로 내려받게 한다.
+     * 없으면(정상적으로는 오지 않는 데이터) S3 키의 마지막 조각이라도 써서, report 뷰어 전용인
+     * {@link com.aivle.sellon.global.file.service.S3PresignedUrlService#generateDownloadUrl(String, Duration)}
+     * (항상 inline)로 잘못 흘러가 다운로드 대신 인라인으로 열리는 걸 막는다.
+     */
+    private String displayFileName(PdfS3Meta meta) {
+        String originalFileName = meta.getOriginalFileName();
+        if (originalFileName != null && !originalFileName.isBlank())
+            return originalFileName;
+
+        String key = meta.getS3FullKey();
+        int lastSlash = key.lastIndexOf('/');
+        return lastSlash >= 0 ? key.substring(lastSlash + 1) : key;
+    }
+
+    /**
+     * 상세 페이지에서 PDF를 뷰어로 바로 열 때 쓴다. report 뷰어 전용 inline 오버로드를 그대로 재사용한다.
+     *
+     * @return 인라인 뷰어 URL. PDF가 없거나 S3 Lifecycle로 이미 삭제됐으면 null
+     */
+    public String generateInline(PdfS3Meta meta) {
+        if (!isAvailable(meta))
+            return null;
+
         return s3PresignedUrlService.generateDownloadUrl(meta.getS3FullKey(), Duration.ofMillis(downloadUrlExpireMs));
     }
 

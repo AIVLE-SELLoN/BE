@@ -21,6 +21,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,6 +32,10 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Table(
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_detection_alert_company_code",
+                        columnNames = {"company_id", "alert_code"})
+        },
         indexes = {
                 @Index(name = "idx_detection_alert_company_status", columnList = "company_id, alert_status"),
                 @Index(name = "idx_detection_alert_detected_at", columnList = "detected_at"),
@@ -45,13 +50,13 @@ public class DetectionAlert extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 32)
+    @Column(nullable = false, length = 72)
     private String alertCode;
 
     @Column(nullable = false)
     private LocalDateTime detectedAt;
 
-    @Column(length = 32)
+    @Column(length = 72)
     private String updatesAlertCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -119,8 +124,8 @@ public class DetectionAlert extends BaseEntity {
     @Column(nullable = false)
     private AlertStatus alertStatus;
 
-    @Column(columnDefinition = "TEXT")
-    private String channelBreakdownSnapshot;
+    @Column(name = "channel_rates", columnDefinition = "TEXT")
+    private String channelRates;
 
     private DetectionAlert(String alertCode, Company company) {
         this.alertCode = alertCode;
@@ -136,12 +141,12 @@ public class DetectionAlert extends BaseEntity {
                                         AlertRootCause rootCause, DetectionConfidence detectionConfidence,
                                         boolean scopeIn, RecommendedAction recommendedAction,
                                         String evidenceInquiryIds, String linkedChangeId,
-                                        String channelBreakdownSnapshot) {
+                                        String channelRates) {
         DetectionAlert detectionAlert = new DetectionAlert(alertCode, company);
         detectionAlert.update(detectedAt, updatesAlertCode, productGroupId, channel, windowStart, windowEnd,
                 verdict, significantChannels, excludedChannels, mainAspect, subAspects, stats, sourceSignals,
                 rootCause, detectionConfidence, scopeIn, recommendedAction, evidenceInquiryIds, linkedChangeId,
-                channelBreakdownSnapshot);
+                channelRates);
         return detectionAlert;
     }
 
@@ -151,7 +156,7 @@ public class DetectionAlert extends BaseEntity {
                        AlertStats stats, String sourceSignals, AlertRootCause rootCause,
                        DetectionConfidence detectionConfidence, boolean scopeIn, RecommendedAction recommendedAction,
                        String evidenceInquiryIds, String linkedChangeId,
-                       String channelBreakdownSnapshot) {
+                       String channelRates) {
         this.detectedAt = detectedAt;
         this.updatesAlertCode = updatesAlertCode;
         this.productGroupId = productGroupId;
@@ -171,6 +176,6 @@ public class DetectionAlert extends BaseEntity {
         this.recommendedAction = recommendedAction;
         this.evidenceInquiryIds = evidenceInquiryIds;
         this.linkedChangeId = linkedChangeId;
-        this.channelBreakdownSnapshot = channelBreakdownSnapshot;
+        this.channelRates = channelRates;
     }
 }

@@ -42,6 +42,14 @@ public class ReportService {
         return ReportResponse.of(report, reportDownloadUrlService.generate(report.getPdfS3Meta()));
     }
 
+    // 가장 최근에 생성된 리포트 1건. status 분기는 getReport와 동일하게 프론트 책임이다
+    public ReportResponse getLatestReport(UserPrincipal principal) {
+        Report report = reportRepository.findLatestByCompanyId(principal.getCompanyId())
+                .orElseThrow(ReportNotFoundException::new);
+
+        return ReportResponse.of(report, reportDownloadUrlService.generate(report.getPdfS3Meta()));
+    }
+
     @Transactional
     public void saveGeneratedReport(String companyKey, MonthlyReportPayload payload) {
         Company company = findCompany(companyKey);

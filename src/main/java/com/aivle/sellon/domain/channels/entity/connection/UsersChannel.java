@@ -8,13 +8,17 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 회사가 특정 채널(쿠팡/지그재그/네이버 등)에 연동한 기록.
- * 채널 연동은 회사 단위 리소스라 company로 테넌트를 구분한다(같은 회사면 ROOT/MEMBER 누구나 조회 가능).
- * 연동 자체는 ROOT 권한을 가진 계정만 수행할 수 있다 (ChannelService에서 검증).
- */
+import java.time.OffsetDateTime;
+
+/** 회사가 채널(쿠팡/지그재그/네이버)에 연동한 기록 - company 단위 테넌트, 연동은 ROOT만 가능(검증은 ChannelService), (company_id, channel_type) 유니크로 DB 레벨 중복 방지. */
 @Entity
-@Table(name = "users_channel")
+@Table(
+        name = "users_channel",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_users_channel_company_channel_type",
+                columnNames = {"company_id", "channel_type"}
+        )
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UsersChannel extends BaseEntity {
@@ -38,6 +42,10 @@ public class UsersChannel extends BaseEntity {
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
+    // raw db 신규 건수를 마지막으로 확인한 시각 (폴링 기준점).
+    @Column(name = "last_sync_checked_at")
+    private OffsetDateTime lastSyncCheckedAt;
+
     public static UsersChannel of(Company company, String channelType, String channelCode) {
         UsersChannel entity = new UsersChannel();
         entity.company = company;
@@ -51,7 +59,7 @@ public class UsersChannel extends BaseEntity {
         this.connectionStatus = connectionStatus;
     }
 
-    public void updateChannelCode(String channelCode) {
-        this.channelCode = channelCode;
+    public void updateLastSyncCheckedAt(OffsetDateTime checkedAt) {
+        this.lastSyncCheckedAt = checkedAt;
     }
 }

@@ -9,10 +9,6 @@ import org.hibernate.annotations.Immutable;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
-/**
- * 「Raw DB 스키마 확정 (8/7)」§2-9 orders. main server(우리) 소유·쓰기 대상.
- * 채널별 하루 합산 주문 원본 - 개별 주문건이 아니다.
- */
 @Entity
 @Immutable
 @Table(name = "orders")

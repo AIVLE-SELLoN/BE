@@ -12,6 +12,7 @@ import com.aivle.sellon.domain.mypage.dto.response.MyPageResponse;
 import com.aivle.sellon.domain.mypage.dto.response.ProfileImagePresignedUrlResponse;
 import com.aivle.sellon.domain.mypage.entity.MonthlyReportRecipient;
 import com.aivle.sellon.domain.mypage.entity.MonthlyReportSetting;
+import com.aivle.sellon.domain.mypage.enums.RecipientDepartment;
 import com.aivle.sellon.domain.mypage.exception.CompanyKeyNotIssuedException;
 import com.aivle.sellon.domain.mypage.exception.DuplicateRecipientEmailException;
 import com.aivle.sellon.domain.mypage.exception.FieldNotEditableException;
@@ -327,7 +328,7 @@ class MyPageServiceTest {
         when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
 
         List<RecipientRequest> recipients = IntStream.range(0, 21)
-                .mapToObj(i -> new RecipientRequest(null, "부서" + i, "user" + i + "@example.com"))
+                .mapToObj(i -> new RecipientRequest(null, RecipientDepartment.OPERATIONS, "user" + i + "@example.com"))
                 .toList();
         ReportSettingRequest reportSettingRequest = new ReportSettingRequest(true, 1, LocalTime.of(9, 0), recipients);
         MyPageUpdateRequest request = new MyPageUpdateRequest(null, null, null, reportSettingRequest);
@@ -344,8 +345,8 @@ class MyPageServiceTest {
         when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
 
         List<RecipientRequest> recipients = List.of(
-                new RecipientRequest(null, "마케팅팀", "dup@example.com"),
-                new RecipientRequest(null, "CS팀", "dup@example.com")
+                new RecipientRequest(null, RecipientDepartment.OPERATIONS, "dup@example.com"),
+                new RecipientRequest(null, RecipientDepartment.CS, "dup@example.com")
         );
         ReportSettingRequest reportSettingRequest = new ReportSettingRequest(true, 1, LocalTime.of(9, 0), recipients);
         MyPageUpdateRequest request = new MyPageUpdateRequest(null, null, null, reportSettingRequest);
@@ -364,7 +365,8 @@ class MyPageServiceTest {
         when(monthlyReportRecipientRepository.findAllByCompanyIdAndDeletedAtIsNullOrderByIdAsc(any()))
                 .thenReturn(List.of());
 
-        List<RecipientRequest> recipients = List.of(new RecipientRequest(999L, "마케팅팀", "mkt@example.com"));
+        List<RecipientRequest> recipients = List.of(
+                new RecipientRequest(999L, RecipientDepartment.OPERATIONS, "mkt@example.com"));
         ReportSettingRequest reportSettingRequest = new ReportSettingRequest(true, 1, LocalTime.of(9, 0), recipients);
         MyPageUpdateRequest request = new MyPageUpdateRequest(null, null, null, reportSettingRequest);
 
@@ -382,7 +384,8 @@ class MyPageServiceTest {
         MonthlyReportSetting setting = MonthlyReportSetting.create(company, true, 1, LocalTime.of(9, 0));
         when(monthlyReportSettingRepository.findByCompanyIdAndDeletedAtIsNull(any())).thenReturn(Optional.of(setting));
 
-        MonthlyReportRecipient existingRecipient = MonthlyReportRecipient.create(company, "마케팅팀", "mkt@example.com");
+        MonthlyReportRecipient existingRecipient = MonthlyReportRecipient.create(
+                company, RecipientDepartment.OPERATIONS, "mkt@example.com");
         ReflectionTestUtils.setField(existingRecipient, "id", 1L);
         when(monthlyReportRecipientRepository.findAllByCompanyIdAndDeletedAtIsNullOrderByIdAsc(any()))
                 .thenReturn(List.of(existingRecipient));
@@ -410,7 +413,7 @@ class MyPageServiceTest {
         when(monthlyReportRecipientRepository.save(any(MonthlyReportRecipient.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        List<RecipientRequest> recipients = List.of(new RecipientRequest(null, "CS팀", "cs@example.com"));
+        List<RecipientRequest> recipients = List.of(new RecipientRequest(null, RecipientDepartment.CS, "cs@example.com"));
         ReportSettingRequest reportSettingRequest = new ReportSettingRequest(true, 1, LocalTime.of(9, 0), recipients);
         MyPageUpdateRequest request = new MyPageUpdateRequest(null, null, null, reportSettingRequest);
 
@@ -491,7 +494,8 @@ class MyPageServiceTest {
         MonthlyReportSetting setting = MonthlyReportSetting.create(company, false, 1, LocalTime.of(9, 0));
         when(monthlyReportSettingRepository.findByCompanyIdAndDeletedAtIsNull(any())).thenReturn(Optional.of(setting));
 
-        MonthlyReportRecipient existingRecipient = MonthlyReportRecipient.create(company, "마케팅팀", "old@example.com");
+        MonthlyReportRecipient existingRecipient = MonthlyReportRecipient.create(
+                company, RecipientDepartment.OPERATIONS, "old@example.com");
         ReflectionTestUtils.setField(existingRecipient, "id", 1L);
         when(monthlyReportRecipientRepository.findAllByCompanyIdAndDeletedAtIsNullOrderByIdAsc(any()))
                 .thenReturn(List.of(existingRecipient));
@@ -503,8 +507,8 @@ class MyPageServiceTest {
                 });
 
         List<RecipientRequest> recipients = List.of(
-                new RecipientRequest(1L, "마케팅팀", "mkt@example.com"),
-                new RecipientRequest(null, "CS팀", "cs@example.com")
+                new RecipientRequest(1L, RecipientDepartment.OPERATIONS, "mkt@example.com"),
+                new RecipientRequest(null, RecipientDepartment.CS, "cs@example.com")
         );
         ReportSettingRequest reportSettingRequest = new ReportSettingRequest(true, 15, LocalTime.of(14, 30), recipients);
         MyPageUpdateRequest request = new MyPageUpdateRequest("new@example.com", "token-abc", null, reportSettingRequest);

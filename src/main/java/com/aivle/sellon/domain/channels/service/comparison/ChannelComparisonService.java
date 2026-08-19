@@ -14,12 +14,13 @@ import com.aivle.sellon.domain.channels.repository.comparison.ChannelInquiryType
 import com.aivle.sellon.domain.channels.repository.comparison.ChannelInsightRepository;
 import com.aivle.sellon.domain.channels.repository.comparison.ChannelMonthlyInquiryRepository;
 import com.aivle.sellon.domain.channels.repository.connection.UsersChannelRepository;
-import com.aivle.sellon.rawdb.entity.ClassifiedItemAspect;
+import com.aivle.sellon.domain.alert.entity.DetectionAlert;
+import com.aivle.sellon.domain.alert.enums.AlertChannel;
+import com.aivle.sellon.domain.alert.repository.DetectionAlertRepository;
 import com.aivle.sellon.rawdb.entity.RawCs;
 import com.aivle.sellon.rawdb.entity.RawOrder;
 import com.aivle.sellon.rawdb.entity.RawReview;
-import com.aivle.sellon.rawdb.repository.ClassifiedItemAspectRepository;
-import com.aivle.sellon.rawdb.repository.RawCsInquiryRepository;
+import com.aivle.sellon.rawdb.repository.RawCsRepository;
 import com.aivle.sellon.rawdb.repository.RawOrderRepository;
 import com.aivle.sellon.rawdb.repository.RawReviewRepository;
 import lombok.RequiredArgsConstructor;
@@ -52,10 +53,10 @@ public class ChannelComparisonService {
     private final ChannelMonthlyInquiryRepository channelMonthlyInquiryRepository;
     private final ChannelInsightRepository channelInsightRepository;
     private final UsersChannelRepository usersChannelRepository;
-    private final RawCsInquiryRepository rawCsInquiryRepository;
+    private final RawCsRepository rawCsInquiryRepository;
     private final RawReviewRepository rawReviewRepository;
     private final RawOrderRepository rawOrderRepository;
-    private final ClassifiedItemAspectRepository classifiedItemAspectRepository;
+    private final DetectionAlertRepository detectionAlertRepository;
 
     /** 요약 지표(총 문의수/응답·해결 대체 지표/속성 분포/리뷰 감성) 산정 기준 - 화면 라벨 "최근 30일"과 일치시킨다. */
     private static final int RECENT_DAYS = 30;
@@ -138,7 +139,7 @@ public class ChannelComparisonService {
 
         InquiryStats inquiryStats = computeInquiryStats(channelType);
         ReviewStats reviewStats = computeReviewStats(channelType);
-        List<ChannelComparisonClient.InquiryTypeCount> inquiryTypeCounts = computeInquiryTypeCounts(channelType);
+        List<ChannelComparisonClient.InquiryTypeCount> inquiryTypeCounts = computeInquiryTypeCounts(companyId, channelType);
         int totalOrderQuantity = computeTotalOrderQuantity(channelType);
 
         List<Double> siblingPositiveRatios = siblingPositiveRatios(companyId, usersChannel.getUsersChannelKey());
@@ -413,30 +414,35 @@ public class ChannelComparisonService {
     }
 
     /**
-     * cs 원문 id 목록으로 classified_item_aspect(AI 노드 소유, 읽기 전용)를 조회해 aspect별
-     * 건수를 집계한다. classification_worker가 아직 처리 안 한 문의는 자연히 결과에서 빠진다
-     * (분류 커버리지 문제 - worker 쪽 dead-letter/coverage 로그로 별도 확인 필요한 영역).
+     * 문의 유형(aspect) 분포 - 기존엔 raw db classified_item_aspect(문의 건별 AI 분류 라벨)를 직접
+     * 집계했으나, develop에서 AI 분류 결과 전달 방식이 RabbitMQ 기반 DetectionAlert(이상탐지 이벤트
+     * 단위)로 바뀌면서 원본 데이터(classified_item_aspect)가 사라졌다. 문의 건별 전체 분포는 더 이상
+     * 복원할 수 없어, DetectionAlert.mainAspect(이상탐지로 플래그된 알림)의 stats.curTotal을
+     * aspect별로 합산하는 근사치로 대체한다 - "탐지된 이상 패턴" 기준이라 실제 전체 문의 비중과는
+     * 다를 수 있음(AI팀에 문의 건별 aspect 라벨 재노출 가능 여부 별도 확인 필요).
      */
-    private List<ChannelComparisonClient.InquiryTypeCount> computeInquiryTypeCounts(String channelType) {
-        List<String> inquiryIds = rawCsInquiryRepository
-                .findByChannelIdAndInquiredAtGreaterThanEqual(channelType, OffsetDateTime.now().minusDays(RECENT_DAYS)).stream()
-                .map(RawCs::getId)
-                .toList();
-
-        if (inquiryIds.isEmpty()) {
+    private List<ChannelComparisonClient.InquiryTypeCount> computeInquiryTypeCounts(Long companyId, String channelType) {
+        AlertChannel alertChannel;
+        try {
+            alertChannel = AlertChannel.valueOf(channelType);
+        } catch (IllegalArgumentException e) {
             return List.of();
         }
 
-        List<ClassifiedItemAspect> aspects = classifiedItemAspectRepository.findByItemIdIn(inquiryIds);
+        List<DetectionAlert> alerts = detectionAlertRepository.findByCompany_IdAndChannel(companyId, alertChannel);
 
-        Map<InquiryType, Integer> counts = new java.util.EnumMap<>(InquiryType.class);
-        for (ClassifiedItemAspect aspect : aspects) {
-            if (aspect.getAspect() != null) {
-                counts.merge(aspect.getAspect(), 1, Integer::sum);
+        Map<InquiryType, Integer> countsByType = new java.util.EnumMap<>(InquiryType.class);
+        for (DetectionAlert alert : alerts) {
+            InquiryType inquiryType;
+            try {
+                inquiryType = InquiryType.fromLabel(alert.getMainAspect().getJsonValue());
+            } catch (IllegalArgumentException e) {
+                continue;
             }
+            countsByType.merge(inquiryType, alert.getStats().getCurTotal(), Integer::sum);
         }
 
-        return counts.entrySet().stream()
+        return countsByType.entrySet().stream()
                 .map(e -> new ChannelComparisonClient.InquiryTypeCount(e.getKey(), e.getValue()))
                 .toList();
     }

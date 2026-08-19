@@ -10,6 +10,9 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Base64;
 
 @Component
@@ -18,6 +21,7 @@ public class CursorUtils {
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_LENGTH_BITS = 128;
+    private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
     @Value("${spring.cursor.secret}")
     private String secret;
@@ -72,5 +76,18 @@ public class CursorUtils {
         } catch (Exception e) {
             throw new InvalidCursorException();
         }
+    }
+
+    /**
+     * id 대신 시각 기준으로 정렬하는 목록(예: 최신순 정렬이 별도 필드를 따라가는 경우)용 오버로드.
+     * 같은 AES-GCM 인코딩을 그대로 쓰고, epoch millis로 바꿔서 Long 경로에 태운다.
+     */
+    public String toCursor(LocalDateTime dateTime) {
+        return dateTime != null ? toCursor(dateTime.atZone(ZONE).toInstant().toEpochMilli()) : null;
+    }
+
+    public LocalDateTime toLocalDateTime(String cursor) {
+        Long millis = toId(cursor);
+        return millis != null ? LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZONE) : null;
     }
 }

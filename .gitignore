@@ -49,3 +49,9 @@ docker-compose.yml
 
 ### IDE run config (환경변수에 자격증명 포함) ###
 .run/
+
+### AGENTS.md
+AGENTS.md
+
+# raw DB
+/local/

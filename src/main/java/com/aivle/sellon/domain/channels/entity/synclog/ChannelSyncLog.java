@@ -8,6 +8,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+// "채널 연동 이력·로그" 화면용. RawChannelSyncPollingService가 폴링해서 SUCCESS/FAILED로 기록한다.
 @Entity
 @Table(name = "channel_sync_log")
 @Getter
