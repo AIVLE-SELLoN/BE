@@ -43,7 +43,12 @@ public class RawDataSourceConfig {
                 .dataSource(rawDbDataSource())
                 .packages("com.aivle.sellon.rawdb.entity")
                 .persistenceUnit("rawDb")
-                .properties(Map.of("hibernate.hbm2ddl.auto", "validate"))
+                .properties(Map.of(
+                        "hibernate.hbm2ddl.auto", "validate",
+                        // @Immutable 엔티티(RawCs/RawReview) 대상 bulk UPDATE(@Modifying @Query)는
+                        // 상품 매핑 소급 반영에 의도적으로 사용하는 것이므로 Hibernate 7 기본 예외를 경고로 낮춘다.
+                        "hibernate.query.immutable_entity_update_query_handling_mode", "warning"
+                ))
                 .build();
     }
 

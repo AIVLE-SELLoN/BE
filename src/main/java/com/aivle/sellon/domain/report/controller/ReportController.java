@@ -28,6 +28,13 @@ public class ReportController {
         return ApiResponse.ok(reportService.getReports(principal));
     }
 
+    @GetMapping("/latest")
+    public ResponseEntity<ApiResponse<ReportResponse>> getLatestReport(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ApiResponse.ok(reportService.getLatestReport(principal));
+    }
+
     @GetMapping("/{reportId}")
     public ResponseEntity<ApiResponse<ReportResponse>> getReport(
             @AuthenticationPrincipal UserPrincipal principal,

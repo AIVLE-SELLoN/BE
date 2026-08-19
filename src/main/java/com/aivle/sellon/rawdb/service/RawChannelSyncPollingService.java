@@ -4,7 +4,7 @@ import com.aivle.sellon.domain.channels.entity.connection.UsersChannel;
 import com.aivle.sellon.domain.channels.enums.ConnectionStatus;
 import com.aivle.sellon.domain.channels.repository.connection.UsersChannelRepository;
 import com.aivle.sellon.domain.channels.service.synclog.ChannelSyncLogService;
-import com.aivle.sellon.rawdb.repository.RawCsInquiryRepository;
+import com.aivle.sellon.rawdb.repository.RawCsRepository;
 import com.aivle.sellon.rawdb.repository.RawOrderRepository;
 import com.aivle.sellon.rawdb.repository.RawReviewRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import java.util.List;
 public class RawChannelSyncPollingService {
 
     private final UsersChannelRepository usersChannelRepository;
-    private final RawCsInquiryRepository rawCsInquiryRepository;
+    private final RawCsRepository rawCsInquiryRepository;
     private final RawReviewRepository rawReviewRepository;
     private final RawOrderRepository rawOrderRepository;
     private final ChannelSyncLogService channelSyncLogService;

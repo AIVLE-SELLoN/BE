@@ -48,7 +48,9 @@ public class ChannelController {
 
     // 실제 네이버 연동 전까지는 프론트에서 목업 로그인 화면을 띄우기 위해 302 대신 JSON으로 응답한다.
     @GetMapping("/naver/authorize")
-    public ResponseEntity<ApiResponse<NaverAuthorizeResponse>> naverAuthorize(@AuthenticationPrincipal UserPrincipal principal) {
+    public ResponseEntity<ApiResponse<NaverAuthorizeResponse>> naverAuthorize(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
         return ApiResponse.ok(channelService.naverAuthorize(principal));
     }
 

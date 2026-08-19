@@ -49,6 +49,18 @@ public class GuidelineDownloadUrlService {
         return lastSlash >= 0 ? key.substring(lastSlash + 1) : key;
     }
 
+    /**
+     * 상세 페이지에서 PDF를 뷰어로 바로 열 때 쓴다. report 뷰어 전용 inline 오버로드를 그대로 재사용한다.
+     *
+     * @return 인라인 뷰어 URL. PDF가 없거나 S3 Lifecycle로 이미 삭제됐으면 null
+     */
+    public String generateInline(PdfS3Meta meta) {
+        if (!isAvailable(meta))
+            return null;
+
+        return s3PresignedUrlService.generateDownloadUrl(meta.getS3FullKey(), Duration.ofMillis(downloadUrlExpireMs));
+    }
+
     /** @return 파일이 아직 S3에 남아있어 다운로드/메일 전송이 가능하면 true */
     public boolean isAvailable(PdfS3Meta meta) {
         return meta != null && meta.getS3FullKey() != null && !isObjectExpired(meta);
