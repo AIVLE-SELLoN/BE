@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 
-public interface RawCsInquiryRepository extends JpaRepository<RawCs, String> {
+public interface RawCsRepository extends JpaRepository<RawCs, String> {
     @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
     long countByChannelIdAndInquiredAtAfter(String channelId, OffsetDateTime inquiredAt);
 

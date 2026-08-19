@@ -68,7 +68,6 @@ public class ChannelProductBatchService {
                     continue;
                 }
                 rawChannelProductMappingService.upsertProduct(
-                        usersChannel.getUsersChannelKey(),
                         record.get("variant_row_id"),
                         channel,
                         record.get("channel_product_id"),
@@ -89,11 +88,12 @@ public class ChannelProductBatchService {
     // 회사가 연동한 모든 채널의 미매칭 상품을 매칭 툴 input_channel_products.csv 포맷으로 내보냄 (크로스채널 매칭용)
     @Transactional(readOnly = true)
     public byte[] exportUnmatchedCsv(Long companyId) {
-        List<Long> usersChannelKeys = usersChannelRepository.findByCompany_Id(companyId).stream()
-                .map(UsersChannel::getUsersChannelKey)
+        List<String> channelTypes = usersChannelRepository.findByCompany_Id(companyId).stream()
+                .map(UsersChannel::getChannelType)
+                .distinct()
                 .toList();
 
-        List<RawProduct> products = rawChannelProductMappingService.getProducts(usersChannelKeys);
+        List<RawProduct> products = rawChannelProductMappingService.getProductsByChannelIds(channelTypes);
         Map<String, RawMappedData> mappings = rawChannelProductMappingService.getMappingsByVariantRowIds(
                 products.stream().map(RawProduct::getVariantRowId).toList());
 

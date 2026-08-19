@@ -21,9 +21,6 @@ public class RawProduct {
     @Column(name = "variant_row_id")
     private String variantRowId;
 
-    @Column(name = "users_channel_key", nullable = false)
-    private Long usersChannelKey;
-
     @Column(name = "channel_id", nullable = false)
     private String channelId;
 
@@ -52,12 +49,11 @@ public class RawProduct {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    public static RawProduct of(Long usersChannelKey, String variantRowId, String channelId,
+    public static RawProduct of(String variantRowId, String channelId,
                                 String channelProductId, String channelProductName,
                                 String optionGroupNames, String channelOptionName,
                                 Long salePrice, Long originalPrice) {
         RawProduct entity = new RawProduct();
-        entity.usersChannelKey = usersChannelKey;
         entity.variantRowId = variantRowId;
         entity.channelId = channelId;
         entity.channelProductId = channelProductId;
@@ -66,6 +62,10 @@ public class RawProduct {
         entity.channelOptionName = channelOptionName;
         entity.salePrice = salePrice;
         entity.originalPrice = originalPrice;
+        // DB 컬럼이 NOT NULL(디폴트 없음)인데 매핑이 빠져있어 신규 insert가 제약 위반으로 실패하던 버그 수정
+        OffsetDateTime now = OffsetDateTime.now();
+        entity.fetchedAt = now;
+        entity.updatedAt = now;
         return entity;
     }
 }

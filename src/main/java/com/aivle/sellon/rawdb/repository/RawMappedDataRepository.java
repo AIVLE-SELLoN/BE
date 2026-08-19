@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public interface RawMappedDataRepository extends JpaRepository<RawMappedData, Long> {
+public interface RawMappedDataRepository extends JpaRepository<RawMappedData, String> {
     @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
     Optional<RawMappedData> findByVariantRowId(String variantRowId);
 
@@ -20,4 +20,7 @@ public interface RawMappedDataRepository extends JpaRepository<RawMappedData, Lo
 
     @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
     List<RawMappedData> findByProductGroupIdIsNull();
+
+    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
+    List<RawMappedData> findByProductGroupId(String productGroupId);
 }

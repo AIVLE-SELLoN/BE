@@ -2,6 +2,7 @@ package com.aivle.sellon.domain.channels.service.connection;
 
 import com.aivle.sellon.domain.channels.dto.request.ChannelConnectRequest;
 import com.aivle.sellon.domain.channels.dto.response.ChannelConnectionResponse;
+import com.aivle.sellon.domain.channels.dto.response.NaverAuthorizeResponse;
 import com.aivle.sellon.domain.channels.entity.connection.UsersChannel;
 import com.aivle.sellon.domain.channels.exception.connection.ChannelConnectNotAllowedException;
 import com.aivle.sellon.domain.channels.exception.connection.ChannelKeyFormatInvalidException;
@@ -38,12 +39,13 @@ public class ChannelService {
         return ChannelConnectionResponse.from(usersChannel);
     }
 
-    public String naverAuthorize(UserPrincipal principal) {
+    public NaverAuthorizeResponse naverAuthorize(UserPrincipal principal) {
         requireRoot(principal);
 
         String state = UUID.randomUUID().toString();
         naverOAuthStateService.save(state, principal.getCompanyId());
-        return mockNaverOAuthClient.buildAuthorizationUrl(state);
+        String authorizationUrl = mockNaverOAuthClient.buildAuthorizationUrl(state);
+        return new NaverAuthorizeResponse(authorizationUrl, state);
     }
 
     @Transactional
