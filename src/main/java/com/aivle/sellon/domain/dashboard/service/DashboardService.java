@@ -1,6 +1,10 @@
 package com.aivle.sellon.domain.dashboard.service;
 
+import com.aivle.sellon.domain.alert.dto.projection.RecommendedActionCount;
 import com.aivle.sellon.domain.alert.enums.AlertChannel;
+import com.aivle.sellon.domain.alert.enums.RecommendedAction;
+import com.aivle.sellon.domain.alert.repository.DetectionAlertRepository;
+import com.aivle.sellon.domain.dashboard.dto.response.ActionSummaryResponse;
 import com.aivle.sellon.domain.dashboard.dto.response.ChannelSummaryResponse;
 import com.aivle.sellon.domain.dashboard.dto.response.DashboardResponse;
 import com.aivle.sellon.domain.notification.repository.NotificationRepository;
@@ -16,6 +20,8 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +40,7 @@ public class DashboardService {
 
     private final NotificationRepository notificationRepository;
     private final RawDashboardMetricReader rawDashboardMetricReader;
+    private final DetectionAlertRepository detectionAlertRepository;
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboard(UserPrincipal principal, String period) {
@@ -72,7 +79,19 @@ public class DashboardService {
                 .toList();
 
         long unreadNotificationCount = notificationRepository.countUnreadByCompanyId(principal.getCompanyId());
-        return DashboardResponse.of(unreadNotificationCount, channelSummary);
+        List<ActionSummaryResponse> actionSummary = buildActionSummary(principal.getCompanyId());
+        return DashboardResponse.of(unreadNotificationCount, channelSummary, actionSummary);
+    }
+
+    private List<ActionSummaryResponse> buildActionSummary(Long companyId) {
+        Map<RecommendedAction, Long> counts = detectionAlertRepository.countByRecommendedAction(companyId)
+                .stream()
+                .collect(Collectors.toMap(RecommendedActionCount::getRecommendedAction, RecommendedActionCount::getCount));
+
+        return Arrays.stream(RecommendedAction.values())
+                .map(action -> ActionSummaryResponse.of(action, counts.getOrDefault(action, 0L)))
+                .sorted(Comparator.comparingLong(ActionSummaryResponse::count).reversed())
+                .toList();
     }
 
     private int toPeriodDays(String period) {
