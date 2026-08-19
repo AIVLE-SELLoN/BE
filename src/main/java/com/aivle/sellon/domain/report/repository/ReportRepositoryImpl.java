@@ -39,6 +39,18 @@ public class ReportRepositoryImpl implements ReportRepositoryCustom {
     }
 
     @Override
+    public Optional<Report> findLatestByCompanyId(Long companyId) {
+        return Optional.ofNullable(
+                queryFactory
+                        .selectFrom(report)
+                        .where(report.company.id.eq(companyId))
+                        .orderBy(report.createdDate.desc())
+                        .limit(1)
+                        .fetchOne()
+        );
+    }
+
+    @Override
     public Optional<Report> findByIdForUpdate(Long id) {
         return Optional.ofNullable(
                 queryFactory
