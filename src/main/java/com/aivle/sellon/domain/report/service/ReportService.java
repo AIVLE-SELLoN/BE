@@ -65,7 +65,7 @@ public class ReportService {
         // 큐 컨벤션 §4.2 - 월간 이벤트의 status는 이 3종뿐이고 케이스별 처리가 다르다
         switch (report.getStatus()) {
             case SUCCESS -> eventPublisher.publishEvent(
-                    new ReportGeneratedEvent(report.getId(), company.getId()));
+                    new ReportGeneratedEvent(report.getId(), company.getId(), report.getReportMonth()));
 
             // 합본 PDF가 10MB를 넘어 S3 업로드 이전에 차단됐다. 보낼 링크 자체가 없다
             case FAILED_SIZE_EXCEEDED -> log.warn(

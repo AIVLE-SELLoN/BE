@@ -6,6 +6,7 @@ package com.aivle.sellon.domain.report.event;
  */
 public record ReportGeneratedEvent(
         Long reportId,
-        Long companyId
+        Long companyId,
+        String reportMonth
 ) {
 }

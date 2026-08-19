@@ -76,6 +76,11 @@ public class Notification extends BaseEntity {
         return new Notification(company, NotificationType.ANOMALY_DETECTED, message, notifiedAt, detectionAlertId);
     }
 
+    public static Notification createForMonthlyReport(Company company, String message, LocalDateTime notifiedAt,
+                                              Long reportId) {
+        return new Notification(company, NotificationType.MONTHLY_REPORT_GENERATED, message, notifiedAt, reportId);
+    }
+
     public void markAsRead() {
         if (isRead) {
             return;
