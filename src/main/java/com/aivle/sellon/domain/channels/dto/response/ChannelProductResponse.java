@@ -11,7 +11,7 @@ public record ChannelProductResponse(
         String channelProductId,
         String productName,
         String optionName,
-        Long price,
+        Integer price,
         String productGroupId,
         MappingMethod mappingMethod,
         MappingStatus mappingStatus

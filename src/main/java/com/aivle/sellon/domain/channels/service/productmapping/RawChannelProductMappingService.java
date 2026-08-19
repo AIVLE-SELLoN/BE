@@ -64,7 +64,7 @@ public class RawChannelProductMappingService {
     @Transactional("rawDbTransactionManager")
     public void upsertProduct(String variantRowId, String channel, String channelProductId,
                                String channelProductName, String optionGroupNames, String channelOptionName,
-                               Long salePrice, Long originalPrice) {
+                               Integer salePrice, Integer originalPrice) {
         if (rawChannelProductRepository.findByVariantRowId(variantRowId).isPresent()) {
             return;
         }
