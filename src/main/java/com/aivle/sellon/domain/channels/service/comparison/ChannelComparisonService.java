@@ -14,12 +14,11 @@ import com.aivle.sellon.domain.channels.repository.comparison.ChannelInquiryType
 import com.aivle.sellon.domain.channels.repository.comparison.ChannelInsightRepository;
 import com.aivle.sellon.domain.channels.repository.comparison.ChannelMonthlyInquiryRepository;
 import com.aivle.sellon.domain.channels.repository.connection.UsersChannelRepository;
-import com.aivle.sellon.domain.alert.entity.DetectionAlert;
-import com.aivle.sellon.domain.alert.enums.AlertChannel;
-import com.aivle.sellon.domain.alert.repository.DetectionAlertRepository;
+import com.aivle.sellon.rawdb.entity.ClassifiedItemAspect;
 import com.aivle.sellon.rawdb.entity.RawCs;
 import com.aivle.sellon.rawdb.entity.RawOrder;
 import com.aivle.sellon.rawdb.entity.RawReview;
+import com.aivle.sellon.rawdb.repository.ClassifiedItemAspectRepository;
 import com.aivle.sellon.rawdb.repository.RawCsRepository;
 import com.aivle.sellon.rawdb.repository.RawOrderRepository;
 import com.aivle.sellon.rawdb.repository.RawReviewRepository;
@@ -56,7 +55,7 @@ public class ChannelComparisonService {
     private final RawCsRepository rawCsInquiryRepository;
     private final RawReviewRepository rawReviewRepository;
     private final RawOrderRepository rawOrderRepository;
-    private final DetectionAlertRepository detectionAlertRepository;
+    private final ClassifiedItemAspectRepository classifiedItemAspectRepository;
 
     /** 요약 지표(총 문의수/응답·해결 대체 지표/속성 분포/리뷰 감성) 산정 기준 - 화면 라벨 "최근 30일"과 일치시킨다. */
     private static final int RECENT_DAYS = 30;
@@ -119,6 +118,20 @@ public class ChannelComparisonService {
             throw new ChannelAccessDeniedException();
         }
 
+        refreshOne(usersChannel);
+    }
+
+    // 회사가 연동한 채널 전부를 한 번에 refresh - 프론트가 usersChannelKey를 몰라도(GET /channels 미포팅 상태) 호출 가능하게.
+    // TODO: 지금은 페이지 진입 시 수동 트리거 - 실제로는 배치/스케줄러가 주기적으로 호출하도록 교체 필요.
+    @Transactional
+    public void refreshAllForCompany(Long companyId) {
+        List<UsersChannel> channels = usersChannelRepository.findByCompany_Id(companyId);
+        for (UsersChannel usersChannel : channels) {
+            refreshOne(usersChannel);
+        }
+    }
+
+    private void refreshOne(UsersChannel usersChannel) {
         ChannelComparisonClient.ComparisonResult result = computeComparisonResult(usersChannel);
 
         upsertComparison(usersChannel, result);
@@ -139,7 +152,7 @@ public class ChannelComparisonService {
 
         InquiryStats inquiryStats = computeInquiryStats(channelType);
         ReviewStats reviewStats = computeReviewStats(channelType);
-        List<ChannelComparisonClient.InquiryTypeCount> inquiryTypeCounts = computeInquiryTypeCounts(companyId, channelType);
+        List<ChannelComparisonClient.InquiryTypeCount> inquiryTypeCounts = computeInquiryTypeCounts(channelType);
         int totalOrderQuantity = computeTotalOrderQuantity(channelType);
 
         List<Double> siblingPositiveRatios = siblingPositiveRatios(companyId, usersChannel.getUsersChannelKey());
@@ -414,35 +427,35 @@ public class ChannelComparisonService {
     }
 
     /**
-     * 문의 유형(aspect) 분포 - 기존엔 raw db classified_item_aspect(문의 건별 AI 분류 라벨)를 직접
-     * 집계했으나, develop에서 AI 분류 결과 전달 방식이 RabbitMQ 기반 DetectionAlert(이상탐지 이벤트
-     * 단위)로 바뀌면서 원본 데이터(classified_item_aspect)가 사라졌다. 문의 건별 전체 분포는 더 이상
-     * 복원할 수 없어, DetectionAlert.mainAspect(이상탐지로 플래그된 알림)의 stats.curTotal을
-     * aspect별로 합산하는 근사치로 대체한다 - "탐지된 이상 패턴" 기준이라 실제 전체 문의 비중과는
-     * 다를 수 있음(AI팀에 문의 건별 aspect 라벨 재노출 가능 여부 별도 확인 필요).
+     * cs 원문 id 목록으로 classified_item_aspect(AI 노드 소유, 읽기 전용)를 조회해 aspect별
+     * 건수를 집계한다. classification_worker가 아직 처리 안 한 문의는 자연히 결과에서 빠진다
+     * (분류 커버리지 문제 - worker 쪽 dead-letter/coverage 로그로 별도 확인 필요한 영역).
+     * 2026-08-19: develop 병합 중 DetectionAlert(알림 도메인) 기반으로 대체를 시도했다가,
+     * 그 데이터는 "이상탐지로 플래그된 것만" 담는 별도 목적 테이블이라 도메인상 부적절하다고
+     * 판단해 되돌림. classified_item_aspect는 develop이 아키텍처를 바꾸며 폐기한 게 아니라
+     * BE 리팩터링 커밋(d5f9fb2)에서 실수로 함께 삭제됐던 것으로 확인되어 복원함 - AI 서비스
+     * core/raw_db.py 상 classification_worker가 지금도 이 테이블에 쓰고 있음을 확인.
      */
-    private List<ChannelComparisonClient.InquiryTypeCount> computeInquiryTypeCounts(Long companyId, String channelType) {
-        AlertChannel alertChannel;
-        try {
-            alertChannel = AlertChannel.valueOf(channelType);
-        } catch (IllegalArgumentException e) {
+    private List<ChannelComparisonClient.InquiryTypeCount> computeInquiryTypeCounts(String channelType) {
+        List<String> inquiryIds = rawCsInquiryRepository.findByChannelIdAndInquiredAtGreaterThanEqual(
+                        channelType, OffsetDateTime.now().minusDays(RECENT_DAYS)).stream()
+                .map(RawCs::getId)
+                .toList();
+
+        if (inquiryIds.isEmpty()) {
             return List.of();
         }
 
-        List<DetectionAlert> alerts = detectionAlertRepository.findByCompany_IdAndChannel(companyId, alertChannel);
+        List<ClassifiedItemAspect> aspects = classifiedItemAspectRepository.findByItemIdIn(inquiryIds);
 
-        Map<InquiryType, Integer> countsByType = new java.util.EnumMap<>(InquiryType.class);
-        for (DetectionAlert alert : alerts) {
-            InquiryType inquiryType;
-            try {
-                inquiryType = InquiryType.fromLabel(alert.getMainAspect().getJsonValue());
-            } catch (IllegalArgumentException e) {
-                continue;
+        Map<InquiryType, Integer> counts = new java.util.EnumMap<>(InquiryType.class);
+        for (ClassifiedItemAspect aspect : aspects) {
+            if (aspect.getAspect() != null) {
+                counts.merge(aspect.getAspect(), 1, Integer::sum);
             }
-            countsByType.merge(inquiryType, alert.getStats().getCurTotal(), Integer::sum);
         }
 
-        return countsByType.entrySet().stream()
+        return counts.entrySet().stream()
                 .map(e -> new ChannelComparisonClient.InquiryTypeCount(e.getKey(), e.getValue()))
                 .toList();
     }
