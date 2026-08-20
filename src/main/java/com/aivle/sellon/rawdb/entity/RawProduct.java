@@ -62,7 +62,6 @@ public class RawProduct {
         entity.channelOptionName = channelOptionName;
         entity.salePrice = salePrice;
         entity.originalPrice = originalPrice;
-        // DB 컬럼이 NOT NULL(디폴트 없음)인데 매핑이 빠져있어 신규 insert가 제약 위반으로 실패하던 버그 수정
         OffsetDateTime now = OffsetDateTime.now();
         entity.fetchedAt = now;
         entity.updatedAt = now;
