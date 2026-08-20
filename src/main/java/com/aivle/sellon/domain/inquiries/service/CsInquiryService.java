@@ -148,7 +148,9 @@ public class CsInquiryService {
             inquiry.getInquireType(),
             inquiry.getAttachmentUrl(),
             inquiry.getInquireAnswer(),
-            inquiry.getInquiryStatus()
+            inquiry.getInquiryStatus(),
+            inquiry.getUser().getName(),
+            inquiry.getCreatedDate()
         );
     }
 }
