@@ -46,7 +46,7 @@ public class Notification extends BaseEntity {
     private Company company;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "type", nullable = false, columnDefinition = "varchar(30)")
     private NotificationType type;
 
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -74,6 +74,11 @@ public class Notification extends BaseEntity {
     public static Notification createForAlert(Company company, String message, LocalDateTime notifiedAt,
                                               Long detectionAlertId) {
         return new Notification(company, NotificationType.ANOMALY_DETECTED, message, notifiedAt, detectionAlertId);
+    }
+
+    public static Notification createForMonthlyReport(Company company, String message, LocalDateTime notifiedAt,
+                                              Long reportId) {
+        return new Notification(company, NotificationType.MONTHLY_REPORT_GENERATED, message, notifiedAt, reportId);
     }
 
     public void markAsRead() {
