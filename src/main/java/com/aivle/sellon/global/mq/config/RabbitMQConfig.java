@@ -1,23 +1,57 @@
 package com.aivle.sellon.global.mq.config;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.boot.amqp.autoconfigure.RabbitListenerRetrySettingsCustomizer;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 
-// exchange/queue/binding은 RabbitMQ Topology Operator(ops 쪽 K8s CR)가 이미 선언해서 관리한다.
-// BE 유저는 configure 권한이 없어서(least-privilege) 여기서 빈으로 다시 선언하면 기동 시
-// "ACCESS_REFUSED - configure access" 로 커넥션이 계속 끊기고 헬스 readiness가 죽는다.
 @Configuration
 public class RabbitMQConfig {
 
     public static final String EXCHANGE_NAME = "app.events";
     public static final String MAIN_INBOUND_QUEUE = "main.inbound";
+    private static final String AI_ROUTING_KEY_PATTERN = "ai.#";
+    private static final String DEAD_LETTER_EXCHANGE = "app.events.dlx";
+    private static final String DEAD_LETTER_ROUTING_KEY = "main.inbound.dead";
+
+    // CI/로컬은 자체 RabbitMQ 컨테이너를 매번 새로 띄우므로 앱이 토폴로지를 직접 선언해야 한다.
+    // prod는 RabbitMQ Topology Operator(ops K8s CR)가 이미 동일 스펙으로 선언해뒀고, BE 유저는
+    // configure 권한이 없어(least-privilege) 여기서 다시 선언을 시도하면 ACCESS_REFUSED로
+    // 커넥션이 끊기고 readiness가 죽는다 - application-prod.yaml에서 false로 끈다.
+    @Bean
+    @ConditionalOnProperty(name = "rabbitmq.topology.self-managed", havingValue = "true", matchIfMissing = true)
+    public TopicExchange appEventsExchange() {
+        return new TopicExchange(EXCHANGE_NAME, true, false);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "rabbitmq.topology.self-managed", havingValue = "true", matchIfMissing = true)
+    public Queue mainInboundQueue() {
+        return QueueBuilder.durable(MAIN_INBOUND_QUEUE)
+                .quorum()
+                .deadLetterExchange(DEAD_LETTER_EXCHANGE)
+                .deadLetterRoutingKey(DEAD_LETTER_ROUTING_KEY)
+                .withArgument("x-delivery-limit", 5)
+                .withArgument("x-message-ttl", 86_400_000)
+                .build();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "rabbitmq.topology.self-managed", havingValue = "true", matchIfMissing = true)
+    public Binding mainInboundBinding(Queue mainInboundQueue, TopicExchange appEventsExchange) {
+        return BindingBuilder.bind(mainInboundQueue).to(appEventsExchange).with(AI_ROUTING_KEY_PATTERN);
+    }
 
     @Bean
     public MessageConverter jsonMessageConverter(JsonMapper jsonMapper) {
