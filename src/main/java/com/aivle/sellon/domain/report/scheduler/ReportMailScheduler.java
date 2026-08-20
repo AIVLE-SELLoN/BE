@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 /**
@@ -21,12 +22,16 @@ public class ReportMailScheduler {
 
     private static final int BATCH_LIMIT = 100;
 
+    // scheduledAt이 KST 벽시계 기준으로 저장되므로(ReportMailDeliveryService 참고),
+    // 여기서도 서버 기본 시간대(UTC)가 아닌 KST로 now를 구해야 비교가 맞는다.
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
     private final ReportMailDeliveryRepository deliveryRepository;
     private final ReportMailDeliveryService deliveryService;
 
     @Scheduled(cron = "${report.mail.scheduler-cron}")
     public void sendDueMails() {
-        List<Long> dueIds = deliveryRepository.findDueIds(LocalDateTime.now(), BATCH_LIMIT);
+        List<Long> dueIds = deliveryRepository.findDueIds(LocalDateTime.now(KST), BATCH_LIMIT);
         if (dueIds.isEmpty())
             return;
 

@@ -19,6 +19,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 /**
  * 월간 리포트 완료 메일의 발송 예약 1건(수신자 1명 기준).
@@ -36,6 +37,9 @@ public class ReportMailDelivery extends BaseEntity {
     public static final int MAX_ATTEMPTS = 5;
 
     private static final int MAX_ERROR_LENGTH = 500;
+
+    // scheduledAt이 KST 벽시계 기준(ReportMailDeliveryService)이라, 재예약도 같은 기준으로 맞춘다.
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -78,7 +82,7 @@ public class ReportMailDelivery extends BaseEntity {
     public void markSent() {
         this.attemptCount++;
         this.status = ReportMailDeliveryStatus.SENT;
-        this.sentAt = LocalDateTime.now();
+        this.sentAt = LocalDateTime.now(KST);
         this.lastError = null;
     }
 
@@ -92,7 +96,7 @@ public class ReportMailDelivery extends BaseEntity {
         if (this.attemptCount >= MAX_ATTEMPTS)
             this.status = ReportMailDeliveryStatus.GIVEN_UP;
         else
-            this.scheduledAt = LocalDateTime.now().plusDays(1);
+            this.scheduledAt = LocalDateTime.now(KST).plusDays(1);
     }
 
     /**
