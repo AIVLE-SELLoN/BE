@@ -93,7 +93,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
                         .requestMatchers(PERMIT_ALL_PATHS).permitAll()
-                        .anyRequest().authenticated()
+                        // TODO: 시연용 임시 조치 - 전체 경로 인증 없이 허용. 시연 끝나면 authenticated()로 되돌릴 것.
+                        .anyRequest().permitAll()
                 )
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(authenticationEntryPoint)
