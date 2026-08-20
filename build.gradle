@@ -66,9 +66,6 @@ dependencies {
 	implementation 'software.amazon.awssdk:auth'
 	implementation 'software.amazon.awssdk:regions'
 
-	// OpenSearch (raw db 조회용)
-	implementation 'org.opensearch.client:opensearch-java:2.14.0'
-
 	// K8s
 
 	// Docker
