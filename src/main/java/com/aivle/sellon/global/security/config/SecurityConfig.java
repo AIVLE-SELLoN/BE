@@ -81,7 +81,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/sellon/auth/register/root", "/api/v1/sellon/auth/register/member",
-                                "/api/v1/sellon/auth/login", "/api/v1/sellon/auth/reissue",
+                                "/api/v1/sellon/auth/login", "/api/v1/sellon/auth/demo-login",
+                                "/api/v1/sellon/auth/reissue",
                                 "/api/v1/sellon/auth/find-id", "/api/v1/sellon/auth/find-password")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET,
@@ -94,8 +95,7 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
                         .requestMatchers(PERMIT_ALL_PATHS).permitAll()
-                        // TODO: 시연용 임시 조치 - 전체 경로 인증 없이 허용. 시연 끝나면 authenticated()로 되돌릴 것.
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(authenticationEntryPoint)
