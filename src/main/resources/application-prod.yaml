@@ -15,6 +15,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    sslmode: require
 
   data:
     redis:
@@ -67,6 +68,7 @@ cloud:
 
 # TODO: 실제 prod raw-db 접속 정보로 확정 필요 (env var 이름은 가정)
 raw-db:
+  sslmode: require
   datasource:
     url: ${RAW_DB_URL}
     driver-class-name: org.postgresql.Driver
