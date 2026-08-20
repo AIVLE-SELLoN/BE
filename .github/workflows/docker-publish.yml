@@ -42,3 +42,40 @@ jobs:
             y0njunch0i/sellon-spring-node:${{ steps.vars.outputs.sha_short }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Checkout gitops
+        uses: actions/checkout@v4
+        with:
+          repository: AIVLE-SELLoN/sellon-gitops
+          ref: main
+          token: ${{ secrets.GITOPS_PAT }}
+          path: gitops
+
+      - name: Bump image tag in gitops
+        working-directory: gitops
+        env:
+          TAG: ${{ steps.vars.outputs.sha_short }}
+        run: |
+          sed -i "s|^    newTag: .*|    newTag: ${TAG}|" spring/kustomization.yaml
+          git config user.name  "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git add spring/kustomization.yaml
+
+          if git diff --staged --quiet; then
+            echo "newTag already ${TAG}; nothing to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(spring): bump image to ${TAG}"
+
+          for i in 1 2 3; do
+            if git push; then
+              echo "pushed on attempt ${i}."
+              exit 0
+            fi
+            echo "push rejected; rebasing and retrying."
+            git pull --rebase
+          done
+
+          echo "::error::failed to push gitops bump after 3 attempts"
+          exit 1
