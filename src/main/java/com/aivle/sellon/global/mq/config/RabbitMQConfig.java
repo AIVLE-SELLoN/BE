@@ -1,11 +1,6 @@
 package com.aivle.sellon.global.mq.config;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.QueueBuilder;
-import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.boot.amqp.autoconfigure.RabbitListenerRetrySettingsCustomizer;
@@ -15,35 +10,14 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 
+// exchange/queue/binding은 RabbitMQ Topology Operator(ops 쪽 K8s CR)가 이미 선언해서 관리한다.
+// BE 유저는 configure 권한이 없어서(least-privilege) 여기서 빈으로 다시 선언하면 기동 시
+// "ACCESS_REFUSED - configure access" 로 커넥션이 계속 끊기고 헬스 readiness가 죽는다.
 @Configuration
 public class RabbitMQConfig {
 
     public static final String EXCHANGE_NAME = "app.events";
     public static final String MAIN_INBOUND_QUEUE = "main.inbound";
-    private static final String AI_ROUTING_KEY_PATTERN = "ai.#";
-    private static final String DEAD_LETTER_EXCHANGE = "app.events.dlx";
-    private static final String DEAD_LETTER_ROUTING_KEY = "main.inbound.dead";
-
-    @Bean
-    public TopicExchange appEventsExchange() {
-        return new TopicExchange(EXCHANGE_NAME, true, false);
-    }
-
-    @Bean
-    public Queue mainInboundQueue() {
-        return QueueBuilder.durable(MAIN_INBOUND_QUEUE)
-                .quorum()
-                .deadLetterExchange(DEAD_LETTER_EXCHANGE)
-                .deadLetterRoutingKey(DEAD_LETTER_ROUTING_KEY)
-                .withArgument("x-delivery-limit", 5)
-                .withArgument("x-message-ttl", 86_400_000)
-                .build();
-    }
-
-    @Bean
-    public Binding mainInboundBinding(Queue mainInboundQueue, TopicExchange appEventsExchange) {
-        return BindingBuilder.bind(mainInboundQueue).to(appEventsExchange).with(AI_ROUTING_KEY_PATTERN);
-    }
 
     @Bean
     public MessageConverter jsonMessageConverter(JsonMapper jsonMapper) {
