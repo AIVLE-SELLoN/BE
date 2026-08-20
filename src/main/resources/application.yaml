@@ -1,0 +1,122 @@
+spring:
+  application:
+    name: sellon
+
+  profiles:
+    active: local
+
+  jwt:
+    secret: pT+HzrT8gQkRpGJzxrfEFiS2yZPLClVhRxn3GuRIq2U=
+    tokens:
+      expire:
+        access_token: 1800000
+        refresh_token: 2592000000
+
+  cursor:
+    secret: pL2URxS9qn80k2DLiSwZ4CplPqXOsLoAWFnVrf0YYlY=
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+  verification:
+    code:
+      expire: 300000
+    token:
+      expire: 1800000
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # 리스너 재시도 정책 (환경 무관 공통). 기본 컨테이너 팩토리에 적용되므로
+  # containerFactory를 따로 지정하지 않은 모든 @RabbitListener가 이 설정을 따른다.
+  rabbitmq:
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-retries: 4        # 최초 1회 + 재시도 4회 = 총 5회 (큐의 x-delivery-limit 5와 동일한 의미)
+          initial-interval: 2s
+          multiplier: 1.0       # 고정 간격 (지수 증가 없음)
+          max-interval: 2s
+
+# AI 서비스(Agent1/2/3, FastAPI)는 로컬/배포 모두 URL 형식이 같아 프로필 공통으로 둔다.
+# 로컬 기본값은 AI 서비스 로컬 실행 포트(uvicorn app.main:app --reload 기준 8000).
+ai-service:
+  base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
+# 기본 health는 DB, RabbitMQ, Redis를 모두 집계하므로 의존 서비스가 일시적으로 끊기면 503을 반환한다.
+# 애플리케이션 자체는 정상이어도 liveness에서 이를 사용하면 kubelet이 파드를 재시작하므로 외부 의존성을 포함하지 않는 liveness group을 사용한다.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
+file:
+  storage-type: local   # local | s3 (S3 전환 시 s3로 변경, 관련 설정 추가 필요)
+  upload-dir: ./uploads
+  # s3:
+  #   bucket: {버킷명}
+  #   presigned-url-expire-minutes: 10
+sellon:
+  admin:
+    seed:
+      email: ${ADMIN_SEED_EMAIL:}
+      password: ${ADMIN_SEED_PASSWORD:}
+      name: ${ADMIN_SEED_NAME:관리자}
+# OpenSearch는 로컬/배포 모두 환경변수로만 접속하는 구조라 프로필 공통으로 둔다
+aws:
+  opensearch:
+    host: ${AWS_OPENSEARCH_HOST}
+    region: ${AWS_OPENSEARCH_REGION:ap-northeast-2}
+    access-key: ${AWS_OPENSEARCH_ACCESS_KEY}
+    secret-key: ${AWS_OPENSEARCH_SECRET_KEY}
+
+report:
+  download-url:
+    expire: 604800000 # 7일 (ms)
+  mail:
+    # 예약 시각이 도래한 완료 메일을 훑는 주기. sendTime이 분 단위라 10분이면 충분하고,
+    # 재시도 간격 자체는 이 주기가 아니라 예약 시각(실패 시 다음 날)이 결정한다
+    scheduler-cron: "0 */10 * * * *"
+guideline:
+  download-url:
+    expire: 604800000 # 파일 보관 기한과 동일한 7일 (ms)
+  file:
+    # 재생성해 올린 PDF도 S3 lifecycle을 그대로 따르므로, 만료 시각을 같은 기간으로 잡는다
+    retention: 604800000 # 7일 (ms)
+cloud:
+  aws:
+    region: ap-northeast-2
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    opensearch:
+      host: ${AWS_OPENSEARCH_HOST}
+      region: ${AWS_OPENSEARCH_REGION:ap-northeast-2}
+      access-key: ${AWS_OPENSEARCH_ACCESS_KEY}
+      secret-key: ${AWS_OPENSEARCH_SECRET_KEY}
+
+raw-db:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/raw_db
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password:
+
+channel:
+  sync:
+    # raw db(cs/reviews/orders) 신규 건수를 채널별로 훑어 "채널 연동 이력" 로그를 남기는 주기.
+    # 이력 화면 용도라 실시간성보다 로그 개수 관리가 우선 - 매일 자정 한 번, 채널당 하루 최대 1건.
+    polling-cron: "0 0 0 * * *"
