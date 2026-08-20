@@ -46,11 +46,6 @@ spring:
       simple:
         prefetch: 20
 
-# application.yaml의 기본값(localhost:8000)이 prod에서도 그대로 쓰일 수 있어(env var 미설정 시)
-# 조용히 로컬을 가리키는 대신 기동 시점에 실패하도록 기본값 없이 필수로 받는다.
-ai-service:
-  base-url: ${AI_SERVICE_BASE_URL}
-
 cloud:
   aws:
     region: ap-northeast-2
