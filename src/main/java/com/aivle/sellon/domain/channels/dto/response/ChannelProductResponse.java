@@ -31,9 +31,23 @@ public record ChannelProductResponse(
                 product.getChannelOptionName(),
                 product.getSalePrice(),
                 matched ? mapping.getProductGroupId() : null,
-                matched && mapping.getMappingMethod() != null ? MappingMethod.valueOf(mapping.getMappingMethod()) : null,
+                matched ? parseMappingMethod(mapping.getMappingMethod()) : null,
                 resolveStatus(matched, skipped, mapping)
         );
+    }
+
+    // mapped_data.mapping_method는 raw db 외부 프로듀서(초기 시딩/배치 매칭 등)도 값을 써서
+    // 우리 enum에 없는 값("AUTO", "INITIAL_SEED" 등)이 섞여 있다. valueOf가 그대로 터지면
+    // 그 행 하나 때문에 목록 조회 전체가 500으로 죽으므로, 모르는 값은 null로 내려보낸다.
+    private static MappingMethod parseMappingMethod(String mappingMethod) {
+        if (mappingMethod == null) {
+            return null;
+        }
+        try {
+            return MappingMethod.valueOf(mappingMethod);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private static MappingStatus resolveStatus(boolean matched, boolean skipped, RawMappedData mapping) {
