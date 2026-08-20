@@ -24,9 +24,6 @@ spring:
       ssl:
         enabled: true
 
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
-
   mail:
     host: smtp.gmail.com
     port: 587
