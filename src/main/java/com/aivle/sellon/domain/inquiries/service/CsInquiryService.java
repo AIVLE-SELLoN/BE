@@ -8,7 +8,6 @@ import com.aivle.sellon.domain.inquiries.entity.CsInquiry;
 import com.aivle.sellon.domain.inquiries.enums.InquiryStatus;
 import com.aivle.sellon.domain.inquiries.exception.CsInquiryAccessDeniedException;
 import com.aivle.sellon.domain.inquiries.exception.CsInquiryAlreadyAnsweredException;
-import com.aivle.sellon.domain.inquiries.exception.CsInquiryNotAnsweredException;
 import com.aivle.sellon.domain.inquiries.exception.CsInquiryNotFoundException;
 import com.aivle.sellon.domain.inquiries.repository.CsInquiryRepository;
 import com.aivle.sellon.domain.user.entity.User;
@@ -92,32 +91,6 @@ public class CsInquiryService {
         return toResponse(inquiry);
     }
 
-    // 관리자 - 이미 등록한 답변 내용만 고쳐 쓴다 (미답변 문의는 수정 대상이 아니라서 answerInquiry를 쓰면 됨)
-    @Transactional
-    public CsInquiryResponse updateAnswer(Long inquireKey, CsAnswerRequest request) {
-        CsInquiry inquiry = getAnsweredInquiry(inquireKey);
-        inquiry.updateAnswer(request.inquireAnswer());
-        return toResponse(inquiry);
-    }
-
-    // 관리자 - 답변을 철회한다. 문의는 삭제되지 않고 다시 답변 대기 상태로 돌아간다.
-    @Transactional
-    public void deleteAnswer(Long inquireKey) {
-        CsInquiry inquiry = getAnsweredInquiry(inquireKey);
-        inquiry.removeAnswer();
-    }
-
-    private CsInquiry getAnsweredInquiry(Long inquireKey) {
-        CsInquiry inquiry = csInquiryRepository.findById(inquireKey)
-                .filter(i -> i.getDeletedAt() == null)
-                .orElseThrow(CsInquiryNotFoundException::new);
-
-        if (!inquiry.isAnswered())
-            throw new CsInquiryNotAnsweredException();
-
-        return inquiry;
-    }
-
     @Transactional(readOnly = true)
     public CsInquiryResponse getInquiryDetail(UserPrincipal principal, Long inquireKey) {
         CsInquiry inquiry = csInquiryRepository.findById(inquireKey)
@@ -148,9 +121,7 @@ public class CsInquiryService {
             inquiry.getInquireType(),
             inquiry.getAttachmentUrl(),
             inquiry.getInquireAnswer(),
-            inquiry.getInquiryStatus(),
-            inquiry.getUser().getName(),
-            inquiry.getCreatedDate()
+            inquiry.getInquiryStatus()
         );
     }
 }

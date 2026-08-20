@@ -61,15 +61,6 @@ public class CsInquiry extends BaseEntity {
         this.inquiryStatus = InquiryStatus.CLEARED;
     }
 
-    public void updateAnswer(String inquireAnswer) {
-        this.inquireAnswer = inquireAnswer;
-    }
-
-    public void removeAnswer() {
-        this.inquireAnswer = null;
-        this.inquiryStatus = InquiryStatus.WAITING;
-    }
-
     public void update(String inquireTitle, String inquireContent, InquireType inquireType, String attachmentUrl) {
         this.inquireTitle = inquireTitle;
         this.inquireContent = inquireContent;

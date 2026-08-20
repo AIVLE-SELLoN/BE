@@ -81,8 +81,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/sellon/auth/register/root", "/api/v1/sellon/auth/register/member",
-                                "/api/v1/sellon/auth/login", "/api/v1/sellon/auth/reissue",
-                                "/api/v1/sellon/auth/find-id", "/api/v1/sellon/auth/find-password")
+                                "/api/v1/sellon/auth/login", "/api/v1/sellon/auth/reissue")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/sellon/verification/email-verification",

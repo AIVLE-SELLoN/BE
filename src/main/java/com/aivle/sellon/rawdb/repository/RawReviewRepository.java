@@ -34,10 +34,6 @@ public interface RawReviewRepository extends JpaRepository<RawReview, String> {
     @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
     long countByChannelIdAndCreatedAtAfter(String channelId, OffsetDateTime createdAt);
 
-    // feat/channel-comparison에서 사용 - 채널 비교 지표(리뷰 평점/감성) 계산용
-    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
-    List<RawReview> findByChannelIdAndCreatedAtGreaterThanEqual(String channelId, OffsetDateTime createdAt);
-
     // 상품 매핑 소급 반영 계약 ①/④: (channel, channelProductId) 기준 과거 reviews 행 전체를 소급 갱신 (기간 제한 없음)
     @Modifying
     @Query("UPDATE RawReview r SET r.productGroupId = :productGroupId " +

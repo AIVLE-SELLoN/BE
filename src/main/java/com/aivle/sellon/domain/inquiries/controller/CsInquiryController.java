@@ -91,25 +91,4 @@ public class CsInquiryController {
         CsInquiryResponse response = csInquiryService.answerInquiry(inquireKey, request);
         return ApiResponse.ok(response);
     }
-
-    @PatchMapping("/{inquireKey}/answer")
-    public ResponseEntity<ApiResponse<CsInquiryResponse>> updateAnswer(
-        @AuthenticationPrincipal UserPrincipal principal,
-        @PathVariable Long inquireKey,
-        @Valid @RequestBody CsAnswerRequest request
-    ) {
-        requireAdmin(principal);
-        CsInquiryResponse response = csInquiryService.updateAnswer(inquireKey, request);
-        return ApiResponse.ok(response);
-    }
-
-    @DeleteMapping("/{inquireKey}/answer")
-    public ResponseEntity<Void> deleteAnswer(
-        @AuthenticationPrincipal UserPrincipal principal,
-        @PathVariable Long inquireKey
-    ) {
-        requireAdmin(principal);
-        csInquiryService.deleteAnswer(inquireKey);
-        return ResponseEntity.noContent().build();
-    }
 }

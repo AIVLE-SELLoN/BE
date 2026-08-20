@@ -76,10 +76,6 @@ public class User extends BaseEntity {
         this.email = email;
     }
 
-    public void changePassword(String password) {
-        this.password = password;
-    }
-
     public void changeProfileImage(String profileImageKey) {
         this.profileImageKey = profileImageKey;
     }
