@@ -1,5 +1,6 @@
 package com.aivle.sellon.rawdb.config;
 
+import com.zaxxer.hikari.HikariDataSource;
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +31,11 @@ public class RawDataSourceConfig {
     @Value("${raw-db.ddl-auto:validate}")
     private String ddlAuto;
 
+    // 로컬 postgres 컨테이너는 SSL 미설정이라 기본값은 prefer(PgJDBC 기본과 동일).
+    // RDS는 prod.yaml에서 require로 강제한다.
+    @Value("${raw-db.sslmode:prefer}")
+    private String sslMode;
+
     @Bean
     @ConfigurationProperties("raw-db.datasource")
     public DataSourceProperties rawDbDataSourceProperties() {
@@ -38,9 +44,12 @@ public class RawDataSourceConfig {
 
     @Bean
     public DataSource rawDbDataSource() {
-        return rawDbDataSourceProperties()
+        HikariDataSource dataSource = rawDbDataSourceProperties()
                 .initializeDataSourceBuilder()
+                .type(HikariDataSource.class)
                 .build();
+        dataSource.addDataSourceProperty("sslmode", sslMode);
+        return dataSource;
     }
 
     @Bean
