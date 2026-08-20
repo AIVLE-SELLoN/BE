@@ -59,7 +59,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000")); // 배포 도메인 생기면 추가
+        config.setAllowedOrigins(List.of("http://localhost:3000", "https://web.sellon.site"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization", "Refresh-Token"));
@@ -94,7 +94,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
                         .requestMatchers(PERMIT_ALL_PATHS).permitAll()
-                        .anyRequest().authenticated()
+                        // TODO: 시연용 임시 조치 - 전체 경로 인증 없이 허용. 시연 끝나면 authenticated()로 되돌릴 것.
+                        .anyRequest().permitAll()
                 )
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(authenticationEntryPoint)
