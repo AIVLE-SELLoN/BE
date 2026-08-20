@@ -16,7 +16,9 @@ WORKDIR /app
 
 RUN groupadd -r sellon && useradd -r -g sellon sellon
 COPY --from=build /workspace/build/libs/*.jar app.jar
-RUN chown sellon:sellon app.jar
+# file.upload-dir(./uploads)이 /app 밑에 상대경로로 생성되는데, WORKDIR로 만들어진 /app은 root 소유라
+# app.jar만 chown하면 sellon 계정이 업로드 디렉터리를 만들 권한이 없다 - /app 자체를 넘겨준다.
+RUN chown sellon:sellon /app app.jar
 USER sellon
 
 EXPOSE 8080
