@@ -7,7 +7,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      # TODO: 최초 스키마 부트스트랩용 임시 조치. 정상 기동 확인되면 validate로 되돌릴 것.
+      ddl-auto: update
 
   datasource:
     url: ${DB_URL}
