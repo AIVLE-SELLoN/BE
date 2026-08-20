@@ -69,6 +69,11 @@ sellon:
       email: ${ADMIN_SEED_EMAIL:}
       password: ${ADMIN_SEED_PASSWORD:}
       name: ${ADMIN_SEED_NAME:관리자}
+  auth:
+    login-lock:
+      max-attempts: 5
+      attempt-window: 600000  # 10분 (ms) 이내 누적 실패 횟수를 센다
+      lock-duration: 300000   # 5분 (ms) 잠금 유지
 
 report:
   download-url:
