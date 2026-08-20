@@ -1,14 +1,20 @@
 package com.aivle.sellon.domain.auth.service;
 
+import com.aivle.sellon.domain.auth.dto.request.FindIdRequest;
+import com.aivle.sellon.domain.auth.dto.request.FindPasswordRequest;
 import com.aivle.sellon.domain.auth.dto.request.LoginRequest;
 import com.aivle.sellon.domain.auth.dto.request.MemberSignupRequest;
 import com.aivle.sellon.domain.auth.dto.request.ReissueRequest;
 import com.aivle.sellon.domain.auth.dto.request.RootSignupRequest;
+import com.aivle.sellon.domain.auth.dto.response.FindIdResponse;
+import com.aivle.sellon.domain.auth.dto.response.FindPasswordResponse;
 import com.aivle.sellon.domain.auth.dto.response.LoginResponse;
 import com.aivle.sellon.domain.auth.dto.response.LoginResult;
 import com.aivle.sellon.domain.auth.dto.response.SignupResponse;
 import com.aivle.sellon.domain.auth.dto.response.TokenResponse;
+import com.aivle.sellon.domain.auth.exception.AccountNotFoundException;
 import com.aivle.sellon.domain.auth.exception.InvalidCredentialsException;
+import com.aivle.sellon.domain.auth.util.EmailMasker;
 import com.aivle.sellon.domain.company.entity.Company;
 import com.aivle.sellon.domain.company.exception.InvalidCompanyKeyException;
 import com.aivle.sellon.domain.company.repository.CompanyRepository;
@@ -35,6 +41,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -48,6 +56,13 @@ public class AuthService {
     private final TokenBlacklistRedisService tokenBlacklistRedisService;
     private final LoginAttemptRedisService loginAttemptRedisService;
     private final EmailVerificationService emailVerificationService;
+    private final EmailMasker emailMasker;
+    private final AuthMailService authMailService;
+
+    private static final int TEMP_PASSWORD_LENGTH = 10;
+    private static final String TEMP_PASSWORD_CHARS =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     @Transactional
     public SignupResponse signupRoot(RootSignupRequest request) {
@@ -135,6 +150,40 @@ public class AuthService {
                 .orElseThrow(UserNotFoundException::new);
 
         return issueTokens(user);
+    }
+
+    // 아이디 찾기 - 회사명 + 사용자 이름이 모두 일치하는 계정의 이메일을 마스킹해서 내려준다.
+    @Transactional(readOnly = true)
+    public FindIdResponse findId(FindIdRequest request) {
+        Company company = companyRepository.findByName(request.companyName())
+                .orElseThrow(AccountNotFoundException::new);
+
+        User user = userRepository.findFirstByNameAndCompanyAndDeletedAtIsNullOrderByIdAsc(request.userName(), company)
+                .orElseThrow(AccountNotFoundException::new);
+
+        return FindIdResponse.of(emailMasker.mask(user.getEmail()));
+    }
+
+    // 비밀번호 찾기 - 임시 비밀번호를 발급해 즉시 저장하고, 가입된 이메일로 발송한다.
+    @Transactional
+    public FindPasswordResponse findPassword(FindPasswordRequest request) {
+        User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
+                .orElseThrow(AccountNotFoundException::new);
+
+        String tempPassword = generateTempPassword();
+        user.changePassword(passwordEncoder.encode(tempPassword));
+
+        authMailService.sendTempPassword(user.getEmail(), tempPassword);
+
+        return FindPasswordResponse.of(emailMasker.mask(user.getEmail()));
+    }
+
+    private String generateTempPassword() {
+        StringBuilder sb = new StringBuilder(TEMP_PASSWORD_LENGTH);
+        for (int i = 0; i < TEMP_PASSWORD_LENGTH; i++) {
+            sb.append(TEMP_PASSWORD_CHARS.charAt(RANDOM.nextInt(TEMP_PASSWORD_CHARS.length())));
+        }
+        return sb.toString();
     }
 
     private TokenResponse issueTokens(User user) {
