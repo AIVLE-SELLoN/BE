@@ -54,10 +54,7 @@ public class RawChannelProductMappingService {
     // 이 productGroupId로 이미 확정된 매핑들이 어느 채널들에 걸쳐 있는지 (후보 카드에 "다른 채널에도 있음" 표시용)
     @Transactional(value = "rawDbTransactionManager", readOnly = true)
     public List<String> getLinkedChannels(String productGroupId) {
-        return channelProductMappingRepository.findByProductGroupId(productGroupId).stream()
-                .map(RawMappedData::getChannel)
-                .distinct()
-                .toList();
+        return channelProductMappingRepository.findDistinctChannelsByProductGroupId(productGroupId);
     }
 
     // 채널 상품 카탈로그 한 행을 적재 (이미 존재하는 variant_row_id는 스킵, 최초 1회 적재)
@@ -73,7 +70,7 @@ public class RawChannelProductMappingService {
                 optionGroupNames, channelOptionName, salePrice, originalPrice));
 
         if (channelProductMappingRepository.findByVariantRowId(variantRowId).isEmpty()) {
-            channelProductMappingRepository.save(RawMappedData.pending(variantRowId, channel, channelProductId));
+            channelProductMappingRepository.save(RawMappedData.pending(variantRowId));
         }
     }
 
@@ -83,7 +80,7 @@ public class RawChannelProductMappingService {
         OffsetDateTime now = OffsetDateTime.now();
 
         RawMappedData mapping = channelProductMappingRepository.findByVariantRowId(variantRowId)
-                .orElseGet(() -> RawMappedData.pending(variantRowId, channel, channelProductId));
+                .orElseGet(() -> RawMappedData.pending(variantRowId));
         mapping.confirm(productGroupId, MappingMethod.MANUAL, null, now);
         channelProductMappingRepository.save(mapping);
 
