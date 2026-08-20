@@ -30,20 +30,11 @@ public interface RawMappedDataRepository extends JpaRepository<RawMappedData, St
     List<RawMappedData> findByVariantRowIdIn(Collection<String> variantRowIds);
 
     @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
-    @Query("SELECT m FROM RawMappedData m, RawProduct p " +
-            "WHERE m.variantRowId = p.variantRowId " +
-            "AND p.channelId = :channel AND p.channelProductId = :channelProductId")
-    List<RawMappedData> findByChannelAndChannelProductId(@Param("channel") String channel,
-                                                          @Param("channelProductId") String channelProductId);
+    List<RawMappedData> findByChannelAndChannelProductId(String channel, String channelProductId);
 
     @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
     List<RawMappedData> findByProductGroupIdIsNull();
 
     @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
     List<RawMappedData> findByProductGroupId(String productGroupId);
-
-    @Transactional(transactionManager = "rawDbTransactionManager", readOnly = true)
-    @Query("SELECT DISTINCT p.channelId FROM RawMappedData m, RawProduct p " +
-            "WHERE m.variantRowId = p.variantRowId AND m.productGroupId = :productGroupId")
-    List<String> findDistinctChannelsByProductGroupId(@Param("productGroupId") String productGroupId);
 }

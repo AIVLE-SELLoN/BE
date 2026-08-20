@@ -28,7 +28,7 @@ public class ClassifiedItemAspect {
     private InquiryType aspect;
 
     @Column(name = "sentiment", nullable = false)
-    private Integer sentiment;
+    private Short sentiment;
 
     @Column(name = "mixed_signal")
     private Boolean mixedSignal;

@@ -18,6 +18,13 @@ public class RawMappedData {
     @Column(name = "variant_row_id")
     private String variantRowId;
 
+    // 실제 DB 컬럼(character varying, NOT NULL, 디폴트 없음) 확인됨 - 여기서 지우면 신규 insert가 제약 위반으로 즉시 실패한다.
+    @Column(name = "channel", nullable = false)
+    private String channel;
+
+    @Column(name = "channel_product_id", nullable = false)
+    private String channelProductId;
+
     // 매칭 툴의 mapped_product_code에 대응하는 상품 그룹 식별자
     @Column(name = "product_group_id")
     private String productGroupId;
@@ -33,9 +40,11 @@ public class RawMappedData {
     @Column(name = "mapped_at")
     private OffsetDateTime mappedAt;
 
-    public static RawMappedData pending(String variantRowId) {
+    public static RawMappedData pending(String variantRowId, String channel, String channelProductId) {
         RawMappedData entity = new RawMappedData();
         entity.variantRowId = variantRowId;
+        entity.channel = channel;
+        entity.channelProductId = channelProductId;
         return entity;
     }
 
