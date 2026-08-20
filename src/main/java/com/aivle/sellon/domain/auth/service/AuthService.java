@@ -23,6 +23,7 @@ import com.aivle.sellon.domain.user.exception.DuplicateEmailException;
 import com.aivle.sellon.domain.user.exception.UserNotFoundException;
 import com.aivle.sellon.domain.user.repository.UserRepository;
 import com.aivle.sellon.domain.verification.service.EmailVerificationService;
+import com.aivle.sellon.global.redis.service.LoginAttemptRedisService;
 import com.aivle.sellon.global.redis.service.RefreshTokenRedisService;
 import com.aivle.sellon.global.redis.service.TokenBlacklistRedisService;
 import com.aivle.sellon.global.security.jwt.JwtProvider;
@@ -53,6 +54,7 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenRedisService refreshTokenRedisService;
     private final TokenBlacklistRedisService tokenBlacklistRedisService;
+    private final LoginAttemptRedisService loginAttemptRedisService;
     private final EmailVerificationService emailVerificationService;
     private final EmailMasker emailMasker;
     private final AuthMailService authMailService;
@@ -98,6 +100,8 @@ public class AuthService {
     }
 
     public LoginResult login(LoginRequest request) {
+        loginAttemptRedisService.assertNotLocked(request.email());
+
         UserPrincipal principal;
         try {
             var authentication = authenticationManager.authenticate(
@@ -105,8 +109,11 @@ public class AuthService {
             );
             principal = (UserPrincipal) authentication.getPrincipal();
         } catch (AuthenticationException e) {
+            loginAttemptRedisService.recordFailure(request.email());
             throw new InvalidCredentialsException();
         }
+
+        loginAttemptRedisService.recordSuccess(request.email());
 
         User user = userRepository.findByIdAndDeletedAtIsNull(principal.getId())
                 .orElseThrow(UserNotFoundException::new);

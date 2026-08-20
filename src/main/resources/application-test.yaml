@@ -1,0 +1,70 @@
+spring:
+  # 둘 다 Base64로 디코딩해 키를 만들기 때문에(JwtProvider/CursorUtils) 임의 문자열이 아닌
+  # 유효한 Base64 32바이트 값이어야 한다. 실제 운영 시크릿과 무관한 CI 전용 값이다.
+  jwt:
+    secret: dA3zttn6P4G6kicgctUImEfImnZw2cobptDtAnX5y0k=
+
+  cursor:
+    secret: ocxllQsSqYoLaykNrja0XS1bDSYrlGPx7/XLeGqvQkU=
+
+  jpa:
+    hibernate:
+      # CI의 postgres 서비스 컨테이너는 매 실행마다 새로 뜨는 빈 DB라 매번 새로 만들고 버린다.
+      ddl-auto: create-drop
+
+  # DB 이름을 local(sellon)과 다르게 둔다. 로컬에서 실수로 test 프로필을 돌려도
+  # create-drop이 로컬 개발 DB를 조용히 지우는 대신 "database does not exist"로 안전하게 실패한다.
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sellon_test
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  # send()를 실제로 호출하는 테스트는 없어서 연결 가능 여부는 상관없다 - 빈 생성만 되면 된다.
+  mail:
+    host: localhost
+    port: 25
+    username: test
+    password: test
+    from: test@sellon.site
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        prefetch: 20
+
+cloud:
+  aws:
+    region: ap-northeast-2
+    credentials:
+      access-key: test-access-key
+      secret-key: test-secret-key
+    s3:
+      report:
+        bucket: test-report-bucket
+        access-key: test-access-key
+        secret-key: test-secret-key
+      image:
+        bucket: test-image-bucket
+        access-key: test-access-key
+        secret-key: test-secret-key
+
+raw-db:
+  # CI의 raw-db 컨테이너는 매번 빈 채로 뜨고 스키마를 채워주는 단계가 없다.
+  # 검증할 기존 스키마가 없으므로 이 프로필에서만 JPA 엔티티 정의로 직접 만들고 버린다.
+  ddl-auto: create-drop
+  # local(raw_db)과 다른 이름 - 위 datasource와 같은 이유
+  datasource:
+    url: jdbc:postgresql://localhost:5433/raw_db_test
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres
