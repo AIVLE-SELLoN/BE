@@ -1,0 +1,12 @@
+.git
+.gradle
+build
+out
+*.log
+
+# 로컬 전용 설정 - 실제 자격증명이 들어있어 이미지에 절대 포함되면 안 된다
+src/main/resources/application-local.yaml
+
+.idea
+.vscode
+*.iml

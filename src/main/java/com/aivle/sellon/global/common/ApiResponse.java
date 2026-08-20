@@ -36,6 +36,13 @@ public record ApiResponse<T>(
                 .body(ApiResponse.<T>builder().data(data).build());
     }
 
+    public static <T> ResponseEntity<ApiResponse<T>> ofTokens(T data, String accessToken, String refreshToken) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .header("Authorization", accessToken)
+                .header("Refresh-Token", refreshToken)
+                .body(ApiResponse.<T>builder().data(data).build());
+    }
+
     public static <T> ResponseEntity<ApiResponse<T>> of(HttpStatus status, String message, T data) {
         return ResponseEntity.status(status)
                 .body(ApiResponse.<T>builder().message(message).data(data).build());
