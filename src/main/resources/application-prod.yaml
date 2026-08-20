@@ -7,13 +7,15 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      # TODO: 최초 스키마 부트스트랩용 임시 조치. 정상 기동 확인되면 validate로 되돌릴 것.
+      ddl-auto: update
 
   datasource:
     url: ${DB_URL}
     driver-class-name: org.postgresql.Driver
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    sslmode: require
 
   data:
     redis:
@@ -66,6 +68,7 @@ cloud:
 
 # TODO: 실제 prod raw-db 접속 정보로 확정 필요 (env var 이름은 가정)
 raw-db:
+  sslmode: require
   datasource:
     url: ${RAW_DB_URL}
     driver-class-name: org.postgresql.Driver
