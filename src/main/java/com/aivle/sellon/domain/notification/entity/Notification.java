@@ -46,7 +46,7 @@ public class Notification extends BaseEntity {
     private Company company;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "type", nullable = false, columnDefinition = "varchar(30)")
     private NotificationType type;
 
     @Column(nullable = false, columnDefinition = "TEXT")
