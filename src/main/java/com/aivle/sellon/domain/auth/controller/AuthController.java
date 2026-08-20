@@ -1,9 +1,13 @@
 package com.aivle.sellon.domain.auth.controller;
 
+import com.aivle.sellon.domain.auth.dto.request.FindIdRequest;
+import com.aivle.sellon.domain.auth.dto.request.FindPasswordRequest;
 import com.aivle.sellon.domain.auth.dto.request.LoginRequest;
 import com.aivle.sellon.domain.auth.dto.request.MemberSignupRequest;
 import com.aivle.sellon.domain.auth.dto.request.ReissueRequest;
 import com.aivle.sellon.domain.auth.dto.request.RootSignupRequest;
+import com.aivle.sellon.domain.auth.dto.response.FindIdResponse;
+import com.aivle.sellon.domain.auth.dto.response.FindPasswordResponse;
 import com.aivle.sellon.domain.auth.dto.response.LoginResponse;
 import com.aivle.sellon.domain.auth.dto.response.LoginResult;
 import com.aivle.sellon.domain.auth.dto.response.SignupResponse;
@@ -63,5 +67,17 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> reissue(@Valid @RequestBody ReissueRequest request) {
         TokenResponse tokens = authService.reissue(request);
         return ApiResponse.ofTokens(null, BEARER_PREFIX + tokens.accessToken(), tokens.refreshToken());
+    }
+
+    // 아이디 찾기 - 회사명 + 사용자 이름으로 마스킹된 가입 이메일을 조회
+    @PostMapping("/find-id")
+    public ResponseEntity<ApiResponse<FindIdResponse>> findId(@Valid @RequestBody FindIdRequest request) {
+        return ApiResponse.ok(authService.findId(request));
+    }
+
+    // 비밀번호 찾기 - 가입 이메일로 임시 비밀번호를 즉시 발급/발송
+    @PostMapping("/find-password")
+    public ResponseEntity<ApiResponse<FindPasswordResponse>> findPassword(@Valid @RequestBody FindPasswordRequest request) {
+        return ApiResponse.ok(authService.findPassword(request));
     }
 }
