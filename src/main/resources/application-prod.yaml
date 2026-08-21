@@ -54,12 +54,12 @@ rabbitmq:
   topology:
     self-managed: false
 
-# 시연용 원클릭 로그인 버튼 전용 계정. 미설정이어도 부팅은 되고 /demo-login 호출 시에만 401.
+# 시연용 원클릭 로그인 버튼 전용 계정. 실제 회원 계정이 아니라 env var 없이 직접 박아둠.
 sellon:
   demo:
     login:
-      email: ${DEMO_LOGIN_EMAIL:}
-      password: ${DEMO_LOGIN_PASSWORD:}
+      email: verox0304@gmail.com
+      password: qnendk1234!
 
 # application.yaml의 기본값(localhost:8000)이 prod에서도 그대로 쓰일 수 있어(env var 미설정 시)
 # 조용히 로컬을 가리키는 대신 기동 시점에 실패하도록 기본값 없이 필수로 받는다.
