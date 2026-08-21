@@ -7,6 +7,7 @@ import com.aivle.sellon.domain.proposal.dto.response.ProposalAcceptHistoryRespon
 import com.aivle.sellon.domain.proposal.entity.Proposal;
 import com.aivle.sellon.domain.proposal.entity.ProposalAcceptHistory;
 import com.aivle.sellon.domain.proposal.enums.HitlStatus;
+import com.aivle.sellon.domain.proposal.event.ProposalAcceptedEvent;
 import com.aivle.sellon.domain.proposal.event.ProposalReviewEventPublisher;
 import com.aivle.sellon.domain.proposal.event.ProposalReviewedEvent;
 import com.aivle.sellon.domain.proposal.exception.ProposalNotFoundException;
@@ -16,6 +17,7 @@ import com.aivle.sellon.domain.proposal.service.support.ProposalAccessGuard;
 import com.aivle.sellon.domain.proposal.service.support.ProposalProductDescriptionApplier;
 import com.aivle.sellon.domain.proposal.service.support.ProposalResponseMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,7 @@ public class ProposalReviewService {
     private final ProposalProductDescriptionApplier productDescriptionApplier;
     private final ProposalAccessGuard accessGuard;
     private final ProposalResponseMapper responseMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     // 분석 재요청 — 반려와 동일하게 이력을 남긴다(reject와 구분 컬럼은 없음, 둘 다 REJECTED 이력으로 쌓임).
@@ -80,6 +83,7 @@ public class ProposalReviewService {
         productDescriptionApplier.apply(proposal, companyId, appliedText);
 
         publishReviewedEvent(proposal, history);
+        eventPublisher.publishEvent(new ProposalAcceptedEvent(companyId, proposal.getAlertId()));
 
         return responseMapper.toResponse(history);
     }
