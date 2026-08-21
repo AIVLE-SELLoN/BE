@@ -18,11 +18,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+
 // ai.anomaly.analyzed 이벤트로 들어온 개선안을 alertId 기준으로 upsert. AlertDetectedHandler 전용 진입점.
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProposalIngestService {
+
+    private static final ZoneId KOREA_ZONE_ID = ZoneId.of("Asia/Seoul");
 
     private final ProposalRepository proposalRepository;
     private final ProposalEvidenceRepository proposalEvidenceRepository;
@@ -43,7 +49,7 @@ public class ProposalIngestService {
         AlertAnalyzedPayload.EvaluatorPayload evaluator = recommendation.evaluator();
 
         proposal.applyAnalysisResult(
-            payload.detectedAt(),
+            toKoreaStandardTime(payload.detectedAt()),
             payload.productGroupId(),
             Channel.valueOf(payload.channel()),
             Verdict.fromKorean(payload.verdict()),
@@ -71,5 +77,10 @@ public class ProposalIngestService {
         }
 
         proposal.updateRawPayload(rawPayloadJson);
+    }
+
+    // 수신은 OffsetDateTime, 저장은 KST 기준 LocalDateTime. 알림 도메인(AlertIngestService)과 동일한 방식.
+    private LocalDateTime toKoreaStandardTime(OffsetDateTime detectedAt) {
+        return detectedAt == null ? null : detectedAt.atZoneSameInstant(KOREA_ZONE_ID).toLocalDateTime();
     }
 }
