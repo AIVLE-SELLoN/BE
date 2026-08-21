@@ -178,4 +178,10 @@ public class DetectionAlert extends BaseEntity {
         this.linkedChangeId = linkedChangeId;
         this.channelRates = channelRates;
     }
+
+    // 개선안 승인 시 호출. 반려는 전환하지 않는다 — "개선안이 부적절"이지 이상 현상이 해결된 게 아니기 때문이
+    // update()에는 넣지 않음. AI 재수신(upsert) 때 update()가 불리면 방금 해결 처리한 알림이 다시 미해결로 전환됨.
+    public void resolve() {
+        this.alertStatus = AlertStatus.RESOLVED;
+    }
 }

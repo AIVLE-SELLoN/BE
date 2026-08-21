@@ -27,19 +27,24 @@ public class MainInboundListener {
         String eventId = envelope.path("eventId").asString(null);
         String traceId = envelope.path("traceId").asString(null);
 
-        MqEventHandler handler = handlers.stream()
+        List<MqEventHandler> matched = handlers.stream()
                 .filter(h -> h.supports(eventType))
-                .findFirst()
-                .orElse(null);
+                .toList();
 
         // 처리할 핸들러가 없는 이벤트는 ack 후 사라진다. 핸들러가 늘어나기 전까지는
         // 무엇이 유실되는지 로그로만 남긴다.
-        if (handler == null) {
+        if (matched.isEmpty()) {
             log.warn("처리 대상이 아닌 이벤트 폐기 - eventType={}, eventId={}, traceId={}",
                     eventType, eventId, traceId);
             return;
         }
 
-        handler.handle(envelope, eventId, traceId);
+        log.info("핸들러 {}개 매칭 - eventType={}, handlers={}, eventId={}, traceId={}",
+                matched.size(), eventType,
+                matched.stream().map(h -> h.getClass().getSimpleName()).toList(), eventId, traceId);
+
+        for (MqEventHandler handler : matched) {
+            handler.handle(envelope, eventId, traceId);
+        }
     }
 }
