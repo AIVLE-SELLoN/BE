@@ -12,6 +12,7 @@ import com.aivle.sellon.domain.auth.dto.response.LoginResponse;
 import com.aivle.sellon.domain.auth.dto.response.LoginResult;
 import com.aivle.sellon.domain.auth.dto.response.SignupResponse;
 import com.aivle.sellon.domain.auth.dto.response.TokenResponse;
+import com.aivle.sellon.domain.auth.exception.InvalidCredentialsException;
 import com.aivle.sellon.domain.auth.service.AuthService;
 import com.aivle.sellon.global.common.ApiResponse;
 import com.aivle.sellon.global.security.jwt.JwtProvider;
@@ -19,6 +20,7 @@ import com.aivle.sellon.global.security.principal.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,6 +38,13 @@ public class AuthController {
     private final AuthService authService;
     private final JwtProvider jwtProvider;
 
+    // 시연용 원클릭 로그인 계정. 실제 비밀번호는 소스에 담지 않고 env var로만 받는다.
+    @Value("${sellon.demo.login.email:}")
+    private String demoLoginEmail;
+
+    @Value("${sellon.demo.login.password:}")
+    private String demoLoginPassword;
+
     @PostMapping("/register/root")
     public ResponseEntity<ApiResponse<SignupResponse>> signupRoot(@Valid @RequestBody RootSignupRequest request) {
         return ApiResponse.create(authService.signupRoot(request));
@@ -48,7 +57,19 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
-        LoginResult result = authService.login(request);
+        return loginResponse(authService.login(request));
+    }
+
+    // 시연용 버튼 전용 - 요청 바디 없이 서버에 설정된 데모 계정으로 바로 로그인 처리한다.
+    @PostMapping("/demo-login")
+    public ResponseEntity<ApiResponse<LoginResponse>> demoLogin() {
+        if (demoLoginEmail.isBlank() || demoLoginPassword.isBlank()) {
+            throw new InvalidCredentialsException();
+        }
+        return loginResponse(authService.login(new LoginRequest(demoLoginEmail, demoLoginPassword)));
+    }
+
+    private ResponseEntity<ApiResponse<LoginResponse>> loginResponse(LoginResult result) {
         TokenResponse tokens = result.tokenResponse();
         return ApiResponse.ofTokens(result.loginResponse(), BEARER_PREFIX + tokens.accessToken(), tokens.refreshToken());
     }

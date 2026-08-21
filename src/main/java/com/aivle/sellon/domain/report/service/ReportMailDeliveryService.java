@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +32,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ReportMailDeliveryService {
+
+    // sendDay/sendTime은 설정 화면에서 KST 벽시계로 입력받는데, 서버(컨테이너)는 UTC로 돈다.
+    // LocalDateTime.now()를 그대로 쓰면 9시간 밀린 시각을 오늘 날짜로 착각해 엉뚱한 날짜/시각에 예약된다.
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final ReportRepository reportRepository;
     private final ReportMailDeliveryRepository deliveryRepository;
@@ -78,7 +83,7 @@ public class ReportMailDeliveryService {
         Map<String, ReportMailDelivery> existing = deliveryRepository.findAllByReportId(reportId).stream()
                 .collect(Collectors.toMap(ReportMailDelivery::getEmail, Function.identity(), (first, ignored) -> first));
 
-        LocalDateTime scheduledAt = resolveScheduledAt(setting, LocalDateTime.now());
+        LocalDateTime scheduledAt = resolveScheduledAt(setting, LocalDateTime.now(KST));
         int scheduled = 0;
 
         for (String email : emails) {

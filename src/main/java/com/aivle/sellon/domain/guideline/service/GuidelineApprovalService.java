@@ -26,10 +26,14 @@ public class GuidelineApprovalService {
         Guideline guideline = guidelineRepository.findByCompanyIdAndGuidelineId(principal.getCompanyId(), guidelineId)
                 .orElseThrow(GuidelineNotFoundException::new);
 
+        // 코멘트는 FE에서 선택 입력이라 request에 아예 안 실려서 null로 들어올 수 있는데,
+        // comment 컬럼이 NOT NULL이라 그대로 저장하면 제약 위반으로 승인 자체가 실패한다.
+        String safeComment = comment != null ? comment : "";
+
         guidelineApprovalRepository.findByGuidelineId(guideline.getId())
                 .ifPresentOrElse(
-                        existing -> existing.updateComment(comment),
-                        () -> guidelineApprovalRepository.save(GuidelineApproval.create(guideline, comment))
+                        existing -> existing.updateComment(safeComment),
+                        () -> guidelineApprovalRepository.save(GuidelineApproval.create(guideline, safeComment))
                 );
     }
 }

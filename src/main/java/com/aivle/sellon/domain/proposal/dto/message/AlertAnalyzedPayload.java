@@ -3,15 +3,14 @@ package com.aivle.sellon.domain.proposal.dto.message;
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record AlertAnalyzedPayload(
         String alertId,
-        // AI가 detected_at에 +09:00 오프셋을 부착해 발행하므로 OffsetDateTime으로 받는다.
-        // LocalDateTime으로 받으면 오프셋을 못 읽어 전건 DLQ로 떨어진다.
+        // AI가 오프셋을 붙여 발행한다(예: +09:00). LocalDateTime으로 받으면 파싱에
+        // 실패해 DLQ로 떨어지므로 OffsetDateTime으로 받고, 저장 시점에 KST로 변환한다.
         OffsetDateTime detectedAt,
         String updatesAlertId,
         String productGroupId,
@@ -39,7 +38,9 @@ public record AlertAnalyzedPayload(
     public record RecommendationPayload(
             String recommendationId,
             String alertId,
-            LocalDateTime createdAt,
+            // 이 값은 어디서도 소비하지 않고 파싱만 되면 되지만, 오프셋이 붙어 오므로
+            // 타입을 맞춰두지 않으면 이것 하나 때문에 메시지 전체가 DLQ로 떨어진다.
+            OffsetDateTime createdAt,
             ProposalPayload proposal,
             List<CitationPayload> citations,
             EvaluatorPayload evaluator,

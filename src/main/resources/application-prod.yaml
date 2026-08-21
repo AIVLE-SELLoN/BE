@@ -48,6 +48,24 @@ spring:
       simple:
         prefetch: 20
 
+# RabbitMQ Topology Operator(ops K8s CR)가 exchange/queue/binding을 이미 선언해뒀고
+# BE 유저는 configure 권한이 없다 - 앱이 다시 선언을 시도하면 ACCESS_REFUSED로 죽는다.
+rabbitmq:
+  topology:
+    self-managed: false
+
+# 시연용 원클릭 로그인 버튼 전용 계정. 미설정이어도 부팅은 되고 /demo-login 호출 시에만 401.
+sellon:
+  demo:
+    login:
+      email: ${DEMO_LOGIN_EMAIL:}
+      password: ${DEMO_LOGIN_PASSWORD:}
+
+# application.yaml의 기본값(localhost:8000)이 prod에서도 그대로 쓰일 수 있어(env var 미설정 시)
+# 조용히 로컬을 가리키는 대신 기동 시점에 실패하도록 기본값 없이 필수로 받는다.
+ai-service:
+  base-url: ${AI_SERVICE_BASE_URL}
+
 cloud:
   aws:
     region: ap-northeast-2
