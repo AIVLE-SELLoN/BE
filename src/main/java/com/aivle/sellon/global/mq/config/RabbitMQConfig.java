@@ -10,6 +10,7 @@ import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.boot.amqp.autoconfigure.RabbitListenerRetrySettingsCustomizer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.databind.json.JsonMapper;
@@ -56,6 +57,13 @@ public class RabbitMQConfig {
     @Bean
     public MessageConverter jsonMessageConverter(JsonMapper jsonMapper) {
         return new JacksonJsonMessageConverter(jsonMapper);
+    }
+
+    // AI가 payload 안 시각 필드에 오프셋을 붙였다 안 붙였다 하는 문제(계약 미확정) 대응.
+    // LenientDateTimeModule 참고.
+    @Bean
+    public JsonMapperBuilderCustomizer lenientDateTimeCustomizer() {
+        return builder -> builder.addModule(new LenientDateTimeModule());
     }
 
     /**
